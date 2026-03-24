@@ -204,3 +204,37 @@ weapon-tellraw-component-cache-size: 5
 async-offline-profile-requests: false
 head-click-enable-profile-requests: true
 spawnhead-command-entity-select-limit: 100
+
+# ============================================================
+# Per-mob configuration for HeadHunter economy
+# drop_chance: probability [0.0-1.0] this mob's head drops
+# sell_price:  coins paid per head via Vault
+# xp:          XP points awarded per head (stored in PlayerDataManager)
+# tier:        bank-note tier used when drop_custom: BANK_NOTE
+# drop_custom: optional — set to BANK_NOTE to drop a note instead of a head
+# ============================================================
+mobs:
+  ZOMBIE:
+    drop_chance: 1.0
+    sell_price: 10
+    xp: 5
+    tier: 1
+  SKELETON:
+    drop_chance: 1.0
+    sell_price: 15
+    xp: 7
+    tier: 1
+  BLAZE:
+    drop_chance: 1.0
+    sell_price: 150
+    xp: 75
+    tier: 3
+    drop_custom: BANK_NOTE
+
+# Coin value paid out when a bank note of the given tier is redeemed
+bank-note-values:
+  1: 50
+  2: 150
+  3: 400
+  4: 900
+  5: 2000

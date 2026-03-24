@@ -1,6 +1,8 @@
 package com.lavishmc.headHunter;
 
 import com.lavishmc.headHunter.DropHeads.DropHeads;
+import net.milkbowl.vault.economy.Economy;
+import org.bukkit.plugin.RegisteredServiceProvider;
 
 /**
  * HeadHunter — plugin entry point.
@@ -18,7 +20,22 @@ public final class HeadHunter extends DropHeads {
         // Initialise all base DropHeads functionality first.
         super.onEvEnable();
 
-        // Then register HeadHunter-specific systems.
+        // Resolve Vault economy (soft dependency — null if unavailable).
+        Economy economy = null;
+        if (getServer().getPluginManager().getPlugin("Vault") != null) {
+            RegisteredServiceProvider<Economy> rsp =
+                    getServer().getServicesManager().getRegistration(Economy.class);
+            if (rsp != null) economy = rsp.getProvider();
+        }
+        if (economy == null) {
+            getLogger().warning("Vault not found or no economy plugin loaded — head selling disabled.");
+        }
+
+        PlayerDataManager playerData = new PlayerDataManager();
+
+        // Register HeadHunter-specific systems.
         getServer().getPluginManager().registerEvents(new MobStackManager(this), this);
+        getServer().getPluginManager().registerEvents(new MobDropListener(this), this);
+        getServer().getPluginManager().registerEvents(new HeadSellListener(this, economy, playerData), this);
     }
 }

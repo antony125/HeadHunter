@@ -1,10 +1,11 @@
-package net.evmodder.DropHeads;
+package com.lavishmc.headHunter.DropHeads;
+
+import com.google.gson.JsonElement;
+import net.evmodder.EvLib.util.ReflectionUtils;
+import org.bukkit.Bukkit;
 
 import java.lang.reflect.Method;
 import java.util.Optional;
-import org.bukkit.Bukkit;
-import com.google.gson.JsonElement;
-import net.evmodder.EvLib.util.ReflectionUtils;
 
 public class CompConverter{
 	// Pre 1.21.6

@@ -1,13 +1,14 @@
-package net.evmodder.DropHeads;
+package com.lavishmc.headHunter.DropHeads;
 
-import java.util.ArrayList;
-import javax.annotation.Nonnull;
-import org.bukkit.inventory.ItemStack;
 import me.arcaniax.hdb.api.HeadDatabaseAPI;
-import net.evmodder.DropHeads.datatypes.NoteblockMode;
+import com.lavishmc.headHunter.DropHeads.datatypes.NoteblockMode;
 import net.evmodder.EvLib.TextUtils;
 import net.evmodder.EvLib.bukkit.TellrawUtils.Component;
 import net.evmodder.EvLib.bukkit.TellrawUtils.TranslationComponent;
+import org.bukkit.inventory.ItemStack;
+
+import javax.annotation.Nonnull;
+import java.util.ArrayList;
 
 /** Internal-only API for DropHeads.
  * WARNING: Functions here are highly subject to change and should not be used by other plugins

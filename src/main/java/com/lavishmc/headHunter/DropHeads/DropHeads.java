@@ -16,23 +16,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package net.evmodder.DropHeads;
+package com.lavishmc.headHunter.DropHeads;
 
+import com.lavishmc.headHunter.DropHeads.commands.*;
+import com.lavishmc.headHunter.DropHeads.datatypes.EntitySetting;
+import com.lavishmc.headHunter.DropHeads.datatypes.NoteblockMode;
+import com.lavishmc.headHunter.DropHeads.listeners.*;
+import net.evmodder.EvLib.bukkit.ConfigUtils;
+import net.evmodder.EvLib.bukkit.EvPlugin;
+import net.evmodder.EvLib.bukkit.Updater;
+import net.evmodder.EvLib.util.FileIO;
 import org.bukkit.configuration.Configuration;
+import org.bukkit.configuration.file.YamlConfiguration;
+
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.stream.Stream;
-import org.bukkit.configuration.file.YamlConfiguration;
-import net.evmodder.DropHeads.commands.*;
-import net.evmodder.DropHeads.datatypes.EntitySetting;
-import net.evmodder.DropHeads.datatypes.NoteblockMode;
-import net.evmodder.DropHeads.listeners.*;
-import net.evmodder.EvLib.bukkit.EvPlugin;
-import net.evmodder.EvLib.bukkit.ConfigUtils;
-import net.evmodder.EvLib.bukkit.Updater;
-import net.evmodder.EvLib.util.FileIO;
 
-public final class DropHeads extends EvPlugin{
+public class DropHeads extends EvPlugin{
 	private static DropHeads instance; public static DropHeads getPlugin(){return instance;}
 	private InternalAPI api; public HeadAPI getAPI(){return api;} public InternalAPI getInternalAPI(){return api;}
 	private DropChanceAPI dropChanceAPI; public DropChanceAPI getDropChanceAPI(){return dropChanceAPI;}

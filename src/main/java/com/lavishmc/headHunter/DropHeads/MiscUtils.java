@@ -1,19 +1,20 @@
-package net.evmodder.DropHeads;
+package com.lavishmc.headHunter.DropHeads;
 
-import java.io.File;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import com.google.common.collect.LinkedListMultimap;
+import com.google.common.collect.Multimap;
+import com.mojang.authlib.properties.Property;
+import net.evmodder.EvLib.TextUtils;
+import net.evmodder.EvLib.bukkit.NBTTagUtils;
+import net.evmodder.EvLib.bukkit.NBTTagUtils.RefNBTTagCompound;
+import net.evmodder.EvLib.bukkit.NBTTagUtils.RefNBTTagList;
+import net.evmodder.EvLib.bukkit.NBTTagUtils.RefNBTTagString;
+import net.evmodder.EvLib.bukkit.TellrawUtils;
+import net.evmodder.EvLib.bukkit.TellrawUtils.*;
+import net.evmodder.EvLib.bukkit.WebUtils;
+import net.evmodder.EvLib.bukkit.YetAnotherProfile;
+import net.evmodder.EvLib.util.FileIO;
+import net.evmodder.EvLib.util.ReflectionUtils;
+import net.evmodder.EvLib.util.WebHook;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -30,31 +31,16 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.util.Vector;
-import com.google.common.collect.LinkedListMultimap;
-import com.google.common.collect.Multimap;
-import com.mojang.authlib.properties.Property;
+
 import javax.annotation.Nonnull;
-import net.evmodder.EvLib.util.FileIO;
-import net.evmodder.EvLib.bukkit.NBTTagUtils;
-import net.evmodder.EvLib.bukkit.NBTTagUtils.RefNBTTagString;
-import net.evmodder.EvLib.bukkit.NBTTagUtils.RefNBTTagCompound;
-import net.evmodder.EvLib.bukkit.NBTTagUtils.RefNBTTagList;
-import net.evmodder.EvLib.bukkit.TellrawUtils;
-import net.evmodder.EvLib.TextUtils;
-import net.evmodder.EvLib.bukkit.WebUtils;
-import net.evmodder.EvLib.bukkit.YetAnotherProfile;
-import net.evmodder.EvLib.bukkit.TellrawUtils.ClickEvent;
-import net.evmodder.EvLib.bukkit.TellrawUtils.Component;
-import net.evmodder.EvLib.bukkit.TellrawUtils.Format;
-import net.evmodder.EvLib.bukkit.TellrawUtils.HoverEvent;
-import net.evmodder.EvLib.bukkit.TellrawUtils.ListComponent;
-import net.evmodder.EvLib.bukkit.TellrawUtils.RawTextComponent;
-import net.evmodder.EvLib.bukkit.TellrawUtils.SelectorComponent;
-import net.evmodder.EvLib.bukkit.TellrawUtils.TextClickAction;
-import net.evmodder.EvLib.bukkit.TellrawUtils.TextHoverAction;
-import net.evmodder.EvLib.bukkit.TellrawUtils.TranslationComponent;
-import net.evmodder.EvLib.util.ReflectionUtils;
-import net.evmodder.EvLib.util.WebHook;
+import java.io.File;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 // A trashy place to dump stuff that I should probably move to EvLib after ensure cross-version safety
 public final class MiscUtils{
@@ -75,7 +61,7 @@ public final class MiscUtils{
 
 	public static final long getJarCreationTime(Plugin pl){
 		try{
-			java.lang.reflect.Method getFileMethod = JavaPlugin.class.getDeclaredMethod("getFile");
+			Method getFileMethod = JavaPlugin.class.getDeclaredMethod("getFile");
 			getFileMethod.setAccessible(true);
 			return ((File)getFileMethod.invoke(pl)).lastModified();
 		}
@@ -263,7 +249,7 @@ public final class MiscUtils{
 	}
 	// https://www.spigotmc.org/threads/tut-item-tooltips-with-the-chatcomponent-api.65964/
 	/**
-	 * Converts an {@link org.bukkit.inventory.ItemStack} to a JSON string
+	 * Converts an {@link ItemStack} to a JSON string
 	 * for sending with TextAction.ITEM
 	 *
 	 * @param itemStack the item to convert
@@ -482,7 +468,7 @@ public final class MiscUtils{
 	public static final YetAnotherProfile getProfile(final String nameOrUUID, final boolean includeSkin, final Plugin nullForSync){
 		Player player;
 		try{player = Bukkit.getServer().getPlayer(UUID.fromString(nameOrUUID));}
-		catch(java.lang.IllegalArgumentException e){player = null;/*thrown by UUID.fromString*/}
+		catch(IllegalArgumentException e){player = null;/*thrown by UUID.fromString*/}
 		if(player == null) player = Bukkit.getServer().getPlayer(nameOrUUID);
 		if(player != null){
 			YetAnotherProfile profile = new YetAnotherProfile(player.getUniqueId(), player.getName());

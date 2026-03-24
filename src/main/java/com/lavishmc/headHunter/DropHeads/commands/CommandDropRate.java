@@ -1,12 +1,16 @@
-package net.evmodder.DropHeads.commands;
+package com.lavishmc.headHunter.DropHeads.commands;
 
-import java.text.DecimalFormat;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
+import com.lavishmc.headHunter.DropHeads.DropChanceAPI;
+import com.lavishmc.headHunter.DropHeads.DropHeads;
+import com.lavishmc.headHunter.DropHeads.InternalAPI;
+import com.lavishmc.headHunter.DropHeads.MiscUtils;
+import com.lavishmc.headHunter.DropHeads.datatypes.EntitySetting;
+import net.evmodder.EvLib.bukkit.EvCommand;
+import net.evmodder.EvLib.bukkit.TellrawUtils.ListComponent;
+import net.evmodder.EvLib.bukkit.TellrawUtils.RawTextComponent;
+import net.evmodder.EvLib.bukkit.TellrawUtils.SelectorComponent;
+import net.evmodder.EvLib.bukkit.TellrawUtils.TranslationComponent;
+import net.evmodder.EvLib.util.FileIO;
 import org.apache.commons.lang3.StringUtils;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -16,17 +20,10 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import net.evmodder.DropHeads.DropChanceAPI;
-import net.evmodder.DropHeads.DropHeads;
-import net.evmodder.DropHeads.InternalAPI;
-import net.evmodder.DropHeads.MiscUtils;
-import net.evmodder.DropHeads.datatypes.EntitySetting;
-import net.evmodder.EvLib.bukkit.EvCommand;
-import net.evmodder.EvLib.util.FileIO;
-import net.evmodder.EvLib.bukkit.TellrawUtils.ListComponent;
-import net.evmodder.EvLib.bukkit.TellrawUtils.TranslationComponent;
-import net.evmodder.EvLib.bukkit.TellrawUtils.RawTextComponent;
-import net.evmodder.EvLib.bukkit.TellrawUtils.SelectorComponent;
+
+import java.text.DecimalFormat;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class CommandDropRate extends EvCommand{
 	private final DropHeads pl;

@@ -179,6 +179,25 @@ log:
   log-head-command: true
   log-head-command-format: '${TIMESTAMP},gethead command,${SENDER},${HEAD}'
 
+# Whether to disable AI on every mob when it spawns, making them stand
+# completely still with no pathfinding or attack behaviour.
+# Mobs still take damage and receive knockback normally.
+freeze-mobs: true
+
+# Whether mobs are allowed to spawn naturally (by world generation, light level,
+# etc.).  Set to false to restrict spawns to placed spawner blocks, spawn eggs,
+# and commands only — except for types listed in natural-spawn-whitelist.
+# Changing this requires a server restart.
+natural-spawning: false
+natural-spawn-whitelist:
+  - PIG
+  - COW
+  - CHICKEN
+  - SHEEP
+  - HORSE
+  - DONKEY
+  - MULE
+
 # Performance/internal settings, edit at your own risk
 message-json-limit: 15000
 weapon-tellraw-component-cache-size: 5

@@ -1,16 +1,17 @@
-package net.evmodder.DropHeads.datatypes;
+package com.lavishmc.headHunter.DropHeads.datatypes;
 
+import com.lavishmc.headHunter.DropHeads.DropHeads;
+import com.lavishmc.headHunter.DropHeads.TextureKeyLookup;
+import net.evmodder.EvLib.util.FileIO;
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
+
+import javax.annotation.Nonnull;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.function.BiFunction;
-import javax.annotation.Nonnull;
-import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
-import net.evmodder.DropHeads.DropHeads;
-import net.evmodder.DropHeads.TextureKeyLookup;
-import net.evmodder.EvLib.util.FileIO;
 
 //public record EntitySetting(
 //	Map<String, EntitySetting> subtypeSettings,

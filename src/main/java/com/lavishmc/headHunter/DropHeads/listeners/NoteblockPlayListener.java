@@ -1,6 +1,9 @@
-package net.evmodder.DropHeads.listeners;
+package com.lavishmc.headHunter.DropHeads.listeners;
 
-import java.util.HashMap;
+import com.lavishmc.headHunter.DropHeads.DropHeads;
+import com.lavishmc.headHunter.DropHeads.MiscUtils;
+import net.evmodder.EvLib.bukkit.HeadUtils;
+import net.evmodder.EvLib.bukkit.YetAnotherProfile;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.SoundCategory;
@@ -10,10 +13,8 @@ import org.bukkit.block.Skull;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.NotePlayEvent;
-import net.evmodder.DropHeads.DropHeads;
-import net.evmodder.DropHeads.MiscUtils;
-import net.evmodder.EvLib.bukkit.HeadUtils;
-import net.evmodder.EvLib.bukkit.YetAnotherProfile;
+
+import java.util.HashMap;
 
 public class NoteblockPlayListener implements Listener{
 	private final HashMap<String, Sound> nbSounds;

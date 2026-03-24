@@ -1,29 +1,15 @@
-package net.evmodder.DropHeads;
+package com.lavishmc.headHunter.DropHeads;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
+import net.evmodder.EvLib.bukkit.EntityUtils;
+import net.evmodder.EvLib.util.ReflectionUtils;
 import org.bukkit.DyeColor;
 import org.bukkit.Keyed;
 import org.bukkit.Location;
 import org.bukkit.block.BlockFace;
-import org.bukkit.entity.Creeper;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.Horse;
-import org.bukkit.entity.Llama;
-import org.bukkit.entity.Ocelot;
-import org.bukkit.entity.Painting;
-import org.bukkit.entity.Parrot;
-import org.bukkit.entity.Rabbit;
-import org.bukkit.entity.Sheep;
-import org.bukkit.entity.Shulker;
-import org.bukkit.entity.Tameable;
-import org.bukkit.entity.TropicalFish;
-import net.evmodder.EvLib.bukkit.EntityUtils;
-import net.evmodder.EvLib.util.ReflectionUtils;
-import org.bukkit.entity.Villager;
-import org.bukkit.entity.Wolf;
-import org.bukkit.entity.Zombie;
-import org.bukkit.entity.ZombieVillager;
+import org.bukkit.entity.*;
+
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 
 /** Utility for getting a TextureKey from an Entity based on its sub-type, attributes, state, etc.
  */

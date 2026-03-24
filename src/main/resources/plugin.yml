@@ -1,4 +1,146 @@
 name: HeadHunter
-version: '1.0.0'
 main: com.lavishmc.headHunter.HeadHunter
-api-version: '1.21'
+author: antony125
+description: Heads for every mob and player.
+website: https://dev.bukkit.org/projects/dropheads
+#3=major rewrite
+#10=Java8->Java21, entity-settings grouping, config file reorg
+#10=More descriptive entity-setting parse errors
+version: 3.10.10
+api-version: 1.13
+softdepend: [HeadDatabase, Essentials, VanishNoPacket]
+
+# Hidden config.yml settings:
+# use-legacy-head-textures,use-1.19.2-vex-head-textures,use-1.20.2-bat-head-textures
+
+commands:
+  spawnhead:
+    description: Get a player or mob head
+    usage: /gethead [giveto] [target] [amount]
+    aliases: [gethead,givehead,getskull,giveskull,dhspawn,phspawn,head,skull]
+    permission: dropheads.spawn
+    permission-message: You do not have permission to do this.
+
+  droprate:
+    description: Check the drop rate for a head
+    usage: /droprate <mob> [new value] [update file]
+    aliases: [headrate,headdropchance,dhrate,headchance]
+    permission: dropheads.droprate
+    permission-message: You do not have permission to do this.
+
+  debug_all_heads:
+    description: Place all heads into the world around the player
+    usage: /debug_all_heads
+    permission: dropheads.debug
+    permission-message: You do not have permission to do this.
+
+permissions:
+  dropheads.canlosehead:
+    description: Killing this entity can cause their head to drop
+    default: true
+
+  dropheads.canbehead:
+    description: This entity will be able to get heads
+    default: true
+    children:
+      dropheads.canbehead.player: true
+      # dropheads.canbehead.<entity>: true
+
+  dropheads.alwaysbehead:
+    description: Permission to get heads 100% of the time, unless the victim has canlosehead=false
+    default: false
+    children:
+      dropheads.canbehead: true
+      # dropheads.alwaysbehead.<entity>: true
+
+  dropheads.clickinfo:
+    description: Permission to see info about a head by clicking it
+    default: true
+    children:
+      dropheads.clickinfo.mobs: true
+      dropheads.clickinfo.players: true
+      dropheads.clickinfo.hdb: true
+  #     dropheads.clickinfo.unknown: true
+
+  dropheads.clickinfo.mobs:
+    description: Permission to see info about a mob head by clicking it
+    default: false
+
+  dropheads.clickinfo.players:
+    description: Permission to see info about a player head by clicking it
+    default: false
+
+  dropheads.clickinfo.hdb:
+    description: Permission to see info about a HeadDatabase head by clicking it
+    default: false
+
+  dropheads.clickinfo.unknown:
+    description: Permission to see info about an unknown type head by clicking it
+    default: false
+
+  dropheads.spawn:
+    description: Permission to use /spawnhead
+    default: op
+    children:
+      dropheads.spawn.mobs: true
+      dropheads.spawn.players: true
+      dropheads.spawn.self: true
+      dropheads.spawn.code: true
+      dropheads.spawn.hdb: true
+      dropheads.spawn.give: true
+
+  dropheads.spawn.mobs:
+    description: Permission to spawn in mob heads
+    default: false
+
+  dropheads.spawn.players:
+    description: Permission to spawn in other players' heads
+    default: false
+
+  dropheads.spawn.self:
+    description: Permission to spawn in your own head
+    default: false
+
+  dropheads.spawn.code:
+    description: Permission to spawn in heads with custom texture codes
+    default: false
+
+  dropheads.spawn.hdb:
+    description: Permission to spawn in HeadDatabase heads
+    default: false
+
+  dropheads.spawn.give:
+    description: Permission to spawn heads in other players' inventories
+    default: false
+
+  dropheads.droprate:
+    description: Permission to use /droprate
+    default: op
+
+  dropheads.droprate.edit:
+    description: Permission to temporarily edit runtime rates with /droprate
+    default: op
+
+  dropheads.droprate.edit.file:
+    description: Permission to reconfigured rates with /droprate
+    default: op
+
+  dropheads.debug:
+    description: Permission to spawn all the heads in a big cube
+    default: false
+
+  dropheads.silentbehead:
+    description: Permission to hide behead messages that you caused from everyone else
+    default: false
+    children:
+      dropheads.silentbehead.vanished: true
+      dropheads.silentbehead.invisible: true
+
+  # NOTE: Currently supports Essentials and VanishNoPacket
+  dropheads.silentbehead.vanished:
+    description: Permission to hide behead messages while vanished
+    default: true
+
+  dropheads.silentbehead.invisible:
+    description: Permission to hide behead messages while invisible
+    default: true

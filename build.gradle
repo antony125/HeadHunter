@@ -1,10 +1,17 @@
 plugins {
     id 'java'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
     id("xyz.jpenilla.run-paper") version "2.3.1"
 }
 
 group = 'com.lavishmc'
 version = '1.0.0'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
 
 repositories {
     mavenCentral()
@@ -12,37 +19,92 @@ repositories {
         name = "papermc-repo"
         url = "https://repo.papermc.io/repository/maven-public/"
     }
+    maven { url 'https://libraries.minecraft.net/' }
+    maven { url 'https://jitpack.io' }
 }
 
 dependencies {
     compileOnly("io.papermc.paper:paper-api:1.21.10-R0.1-SNAPSHOT")
+    compileOnly('com.mojang:authlib:7.0.61')
+    compileOnly(files("libs/DropHeads_v3.10.10.jar"))
+    compileOnly 'com.github.MilkBowl:VaultAPI:1.7.1'
 }
 
 tasks {
     runServer {
-        // Configure the Minecraft version for our task.
-        // This is the only required configuration besides applying the plugin.
-        // Your plugin's jar (or shadowJar if present) will be used automatically.
-        minecraftVersion("1.21")
+        minecraftVersion("1.21.10")
     }
 }
 
-def targetJavaVersion = 21
-java {
-    def javaVersion = JavaVersion.toVersion(targetJavaVersion)
-    sourceCompatibility = javaVersion
-    targetCompatibility = javaVersion
-    if (JavaVersion.current() < javaVersion) {
-        toolchain.languageVersion = JavaLanguageVersion.of(targetJavaVersion)
+def stubsSrcDir   = file("$buildDir/generated-stubs")
+def stubsClassDir = file("$buildDir/stub-classes")
+
+task generateStubs {
+    outputs.dir stubsSrcDir
+    doLast {
+        def pkg = new File(stubsSrcDir, 'me/arcaniax/hdb/api')
+        pkg.mkdirs()
+
+        new File(pkg, 'HeadDatabaseAPI.java').text = '''\
+package me.arcaniax.hdb.api;
+import org.bukkit.inventory.ItemStack;
+public class HeadDatabaseAPI {
+    public ItemStack getItemHead(String id) { return null; }
+    public String getItemID(ItemStack head) { return null; }
+    public boolean isHead(String id) { return false; }
+}
+'''
+        new File(pkg, 'DatabaseLoadEvent.java').text = '''\
+package me.arcaniax.hdb.api;
+import org.bukkit.event.Event;
+import org.bukkit.event.HandlerList;
+public class DatabaseLoadEvent extends Event {
+    private static final HandlerList HANDLERS = new HandlerList();
+    public static HandlerList getHandlerList() { return HANDLERS; }
+    @Override public HandlerList getHandlers() { return HANDLERS; }
+}
+'''
     }
 }
+
+task compileStubs(type: JavaCompile, dependsOn: generateStubs) {
+    source              = fileTree(stubsSrcDir)
+    classpath           = configurations.compileClasspath
+    destinationDirectory.set(stubsClassDir)
+    options.release     = 21
+}
+
+compileJava.dependsOn compileStubs
+compileJava.classpath += files(stubsClassDir)
+
+jar {
+    enabled = false
+}
+
+shadowJar {
+    archiveFileName   = 'HeadHunter.jar'
+    archiveClassifier = ''
+
+    manifest {
+        attributes['paperweight-mappings-namespace'] = 'mojang'
+    }
+
+    from(zipTree('libs/DropHeads_v3.10.10.jar')) {
+        include 'net/evmodder/EvLib/**'
+    }
+
+    from('src/main/resources/configs')        { into 'configs' }
+    from('src/main/resources/extra-textures') { into 'extra-textures' }
+
+    exclude 'META-INF/*.SF'
+    exclude 'META-INF/*.DSA'
+    exclude 'META-INF/*.RSA'
+}
+
+assemble.dependsOn shadowJar
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
-
-    if (targetJavaVersion >= 10 || JavaVersion.current().isJava10Compatible()) {
-        options.release.set(targetJavaVersion)
-    }
 }
 
 processResources {

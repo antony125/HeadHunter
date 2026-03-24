@@ -1,22 +1,15 @@
-package net.evmodder.DropHeads.listeners;
+package com.lavishmc.headHunter.DropHeads.listeners;
 
-import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Random;
-import java.util.UUID;
-import javax.annotation.Nonnull;
+import com.lavishmc.headHunter.DropHeads.DropHeads;
+import com.lavishmc.headHunter.DropHeads.MiscUtils;
+import com.lavishmc.headHunter.DropHeads.TextureKeyLookup;
+import com.lavishmc.headHunter.DropHeads.datatypes.EntitySetting;
+import com.lavishmc.headHunter.DropHeads.events.HeadRollEvent;
+import net.evmodder.EvLib.TextUtils;
+import net.evmodder.EvLib.bukkit.EvUtils;
+import net.evmodder.EvLib.bukkit.HeadUtils;
 import org.bukkit.Material;
-import org.bukkit.entity.Creeper;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
-import org.bukkit.entity.Hanging;
-import org.bukkit.entity.LivingEntity;
-import org.bukkit.entity.Player;
-import org.bukkit.entity.Projectile;
-import org.bukkit.entity.Vehicle;
+import org.bukkit.entity.*;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -27,14 +20,10 @@ import org.bukkit.event.hanging.HangingBreakByEntityEvent;
 import org.bukkit.event.vehicle.VehicleDestroyEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.EventExecutor;
-import net.evmodder.DropHeads.DropHeads;
-import net.evmodder.DropHeads.MiscUtils;
-import net.evmodder.DropHeads.TextureKeyLookup;
-import net.evmodder.DropHeads.datatypes.EntitySetting;
-import net.evmodder.DropHeads.events.HeadRollEvent;
-import net.evmodder.EvLib.bukkit.EvUtils;
-import net.evmodder.EvLib.bukkit.HeadUtils;
-import net.evmodder.EvLib.TextUtils;
+
+import javax.annotation.Nonnull;
+import java.text.DecimalFormat;
+import java.util.*;
 
 public class EntityDeathListener implements Listener{
 	private final DropHeads pl;

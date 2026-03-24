@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/natha/**)",
+      "Read(//c/Users/natha/Downloads/**)",
+      "Bash(cp -r \"C:/Users/natha/OneDrive/Desktop/My Plugins for LavishMC/DropHeads/configs\" \"C:/Users/natha/OneDrive/Desktop/Plugins for Empires/HeadHunter/src/main/resources/\")",
+      "Bash(cp -r \"C:/Users/natha/OneDrive/Desktop/My Plugins for LavishMC/DropHeads/extra-textures\" \"C:/Users/natha/OneDrive/Desktop/Plugins for Empires/HeadHunter/src/main/resources/\")",
+      "Bash(./gradlew jar:*)",
+      "Bash(xargs grep:*)",
+      "Bash(jar tf:*)",
+      "Bash(./gradlew shadowJar)",
+      "Bash(javap:*)"
+    ]
+  }
+}

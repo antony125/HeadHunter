@@ -1,0 +1,128 @@
+# Droprates are from [0, 1]
+# So for example, 0.5 means "50% chance"
+# and similarly 0.06 would be a 6% chance
+
+PLAYER:             0.250
+UNKNOWN:            0.000 // the default chance
+ALLAY:              0.006
+ARMADILLO:          0.009
+AXOLOTL:            0.007
+BAT:                0.010
+BEE:                0.006
+BOGGED:             0.005
+BREEZE:             0.030
+BLAZE:              0.005
+CAMEL:              0.006
+CAMEL_HUSK:         0.005
+CAT:                0.004
+CAVE_SPIDER:        0.001
+CHICKEN:            0.001
+COD:                0.002
+COPPER_GOLEM:       0.010
+COW:                0.004
+CREAKING:           0.005
+CREEPER:            0.006
+DOLPHIN:            0.005
+DONKEY:             0.007
+DROWNED:            0.003
+ELDER_GUARDIAN:     0.050
+ENDERMAN:           0.004
+ENDER_DRAGON:       0.050
+ENDERMITE:          0.011
+EVOKER:             0.005
+FOX:                0.005
+FROG:               0.006
+GHAST:              0.007
+GIANT:              0.050
+GLOW_SQUID:         0.004
+GOAT:               0.004
+GUARDIAN:           0.004
+HAPPY_GHAST:        0.008
+HAPPY_GHAST|BABY:   0.006
+HOGLIN:             0.004
+HORSE:              0.006
+HUSK:               0.005
+ILLUSIONER:         0.050
+IRON_GOLEM:         0.007
+LLAMA:              0.007
+MAGMA_CUBE:         0.007
+MOOSHROOM:          0.004
+MULE:               0.008
+NAUTILUS:           0.008
+OCELOT:             0.007
+PANDA:              0.004
+PARCHED:            0.004
+PARROT:             0.008
+PHANTOM:            0.006
+PIG:                0.004
+PIG_ZOMBIE:         0.002
+PIGLIN:             0.004
+PIGLIN_BRUTE:       0.009
+PILLAGER:           0.005
+POLAR_BEAR:         0.008
+PUFFERFISH:         0.004
+RABBIT:             0.003
+RAVAGER:            0.006
+SALMON:             0.004
+SHEEP:              0.005
+SHULKER:            0.015
+#SHULKER|RED:        0.014
+SILVERFISH:         0.005
+SKELETON:           0.003
+SKELETON_HORSE:     0.009
+SLIME:              0.004
+SNIFFER:            0.009
+SNOW_GOLEM:         0.008
+SPIDER:             0.004
+SQUID:              0.005
+STRAY:              0.004
+STRIDER:            0.003
+TADPOLE:            0.004
+TRADER_LLAMA:       0.007
+TROPICAL_FISH:      0.004
+TURTLE:             0.003
+VEX:                0.006
+VILLAGER:           0.029
+VINDICATOR:         0.003
+WANDERING_TRADER:   0.009
+WARDEN:             0.009
+WITCH:              0.004
+WITHER:             0.030
+WITHER_SKELETON:    0.025
+WOLF:               0.007
+ZOGLIN:             0.006
+ZOMBIE:             0.004
+ZOMBIE_HORSE:       0.070
+ZOMBIE_NAUTILUS:    0.007
+ZOMBIE_VILLAGER:    0.019
+ZOMBIFIED_PIGLIN:   0.002
+
+# Hanging Entities
+ARMOR_STAND: 0
+LEASH_KNOT: 0
+PAINTING: 0
+ITEM_FRAME: 0
+GLOW_ITEM_FRAME: 0
+
+# Vehicles
+MINECART: 0
+CHEST_MINECART: 0
+COMMAND_BLOCK_MINECART: 0
+FURNACE_MINECART: 0
+HOPPER_MINECART: 0
+SPAWNER_MINECART: 0
+TNT_MINECART: 0
+
+ACACIA_CHEST_BOAT: 0
+BAMBOO_CHEST_RAFT: 0
+BIRCH_CHEST_BOAT: 0
+CHERRY_CHEST_BOAT: 0
+DARK_OAK_CHEST_BOAT: 0
+JUNGLE_CHEST_BOAT: 0
+MANGROVE_CHEST_BOAT: 0
+OAK_CHEST_BOAT: 0
+PALE_OAK_CHEST_BOAT: 0
+SPRUCE_CHEST_BOAT: 0
+
+
+# You can add custom mobs to this list, but it will only work if an EntityType is defined

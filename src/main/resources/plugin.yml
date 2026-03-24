@@ -1,0 +1,4 @@
+name: HeadHunter
+version: '1.0.0'
+main: com.lavishmc.headHunter.HeadHunter
+api-version: '1.21'

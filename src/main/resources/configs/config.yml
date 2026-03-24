@@ -1,0 +1,187 @@
+# Announcement mode for players with the 'dropheads.silentbehead' permission
+# Overrides behead-announcement in entity-settings.yml
+# it is recommended to use 'DIRECT' or 'OFF' here
+silentbehead-announcement: OFF
+
+# How far 'LOCAL' broadcasts can be heard
+local-broadcast-distance: 200
+
+# Whether 'LOCAL' broadcasts can be heard through a nether portal
+local-broadcast-cross-dimension: true
+
+# Replace player death message with behead message (if announcement is GLOBAL)
+behead-announcement-replaces-player-death-message: true
+
+# Replace Bukkit event message; can help with DiscordSRV compatibility
+behead-announcement-replaces-player-death-event-message: false
+
+# Replace death message sent to the owner of a pet when it is beheaded
+behead-message-replaces-pet-death-message: true
+
+# Only drop "simple" mob heads (one per EntityType), without any unique
+# texture features based on mob traits or subtype
+simple-mob-heads-only: false
+
+# Whether to keep entity heads updated with the latest vanilla textures
+refresh-textures: true
+
+# Whether to reset the item name for a head when refreshing its texture
+refresh-item-names: false
+
+# Whether to reset the item lore for a head when refreshing its texture
+# This setting is ignored if 'save-custom-lore' is true
+refresh-item-lores: false
+
+# Whether heads should update to the player's current skin when mined/dropped
+update-on-skin-change: false
+
+# Whether to disable head item stacking (stack to 1 instead of 64)
+# Note: Currently only affects custom (non-vanilla) heads
+make-heads-unstackable: false
+
+# Track mob spawn reasons, edits drop rates using 'spawn-cause-multipliers.txt'
+track-mob-spawns: true
+
+# Enable the mechanic where the first mob killed by a charged creeper's
+# explosion will drop its head with 100% probability
+# Note: This overrides 'drop-for-nonplayer-kills', but not 'player-heads-only'
+charged-creeper-drops: true
+
+# A Minecraft easter egg is that mobs named 'Dinnerbone' or 'Grumm' are
+# upside down. If you want their heads to also be upside down, set to true
+drop-grumm-heads: false
+
+# Should shulker heads be oriented based on what side of a block they were
+# attached to when they were killed?
+drop-sideways-shulker-heads: false
+
+# Should tamed dog and cats have their (colored) collar visible on their head?
+drop-collared-heads: false
+
+# Should heads of saddled mobs have altered textures (when applicable)?
+drop-saddled-heads: false
+
+# Should skeletal mob heads use hollow textures on the bottom?
+# Note: This relies on HD textures, which Mojang might patch
+hollow-skeletal-skulls: false
+
+# Should slimes drop semi-transparent heads, similar to their ingame model?
+# Note: This relies on HD textures, which Mojang doesn't always permit
+transparent-slime-heads: false
+
+# Enable plugin auto-updates (checks for new versions and head textures)
+# Note: Disable if your console shows DropHeads errors on startup
+update-plugin: true
+
+# Whether head-textures.txt will be overwritten for each plugin update
+# Set to false if you want to manually update textures (or set your own)
+update-textures: true
+
+# Run in debug mode (prints extra information to console)
+debug-messages: false
+
+# Shows information about a head when right-clicked by a player
+# Note: The output head-click-info can be configured in translate.yml
+head-click-listener: true
+# Set to 0 for no limit on head click message frequency
+head-click-max-rate-in-ticks: 5
+
+# Saves lore of heads in GameProfile when placed (used by some other plugins)
+# Only works for player-type heads, eg: won't work for minecraft:creeper_head
+# WARNING: This feature is in BETA and is relatively untested
+# WARNING: Lore will still get lost if the head is broken by a non-player
+# WARNING: This setting overrides 'refresh-item-lores'
+save-custom-lore: true
+
+# Corrects custom lore and name when CTRL-copying a placed head in creative
+fix-creative-nbt-copy: true
+
+# Displays the type of head (eg: player, mob, HDB) in the head item's lore
+# Note: Applies to custom player/mob heads, but not to WITHER_SKULL etc.
+show-head-type-in-lore: true
+
+# Adds support for DropHeads-namespaced heads in the vanilla `/give` command
+# WARNING: This feature is in EARLY-BETA and may not end up being supported
+substitute-dropheads-in-give-command: true
+
+# Defer wither skeleton skull handling to vanilla Minecraft
+# This bypasses 'head-drop-rates.txt', custom looting multiplier/addition,
+# 'must-use-axe', 'drop-for-nonplayer-kills', and other DropHeads settings
+# However, it does not bypass permissions such as 'dropheads.alwaysbehead'
+vanilla-wither-skeleton-skulls: true
+
+# Replace Zombie_Pigman heads with Zombified_Piglin heads in 1.16+
+update-zombie-pigman-heads: true
+
+# Replaces player-model piglin heads with the vanilla ones added in 1.19.3+
+# Requires 'refresh-textures' to also be set to true.
+update-piglin-heads: true
+
+# Updates internal texture keys for mob heads when refreshed
+# Can improve stacking for legacy heads (from older versions of the plugin)
+replace-redirected-texture-keys: false
+
+# Whether to use material types for zombie, creeper, skeleton & wither skulls
+# If this is false, all heads will be forced to use the player_head type
+prefer-vanilla-heads: true
+
+# Whether Iron Golems will drop "cracked" heads which can be repaired
+# to the normal texture by placing them and clicking on them with iron ingots
+cracked-iron-golem-heads: false
+
+# Whether to replace the noteblock sound with the ambient mob sound when the
+# noteblock played has a custom mob head on top of it, options are:
+# OFF - no custom noteblock sounds
+# LISTENER - sounds are chosen when a noteblock event occurs (recommended)
+# ITEM_META - custom sounds are encoded into every head item's NBT
+noteblock-mob-sounds: 'OFF'
+
+# A list of mob heads a player can wear to avoid provoking endermen
+endermen-camouflage-heads: []
+
+# Only used when 'head-item-drop-mode' = 'PLACE' in entity-settings.yml
+# Controls what blocks heads can be placed in
+head-place-overwrite-blocks: ['AIR', 'WATER', 'SHORT_GRASS']
+
+# Changes the death `Event Priority` that DropHeads registers at
+# Low values => DropHeads runs BEFORE other plugins; high values => runs AFTER
+# Possible values: [LOWEST, LOW, NORMAL, HIGH, HIGHEST, MONITOR]
+death-listener-priority: LOW
+
+# In vanilla, the main-hand item is used for looting even if shot from offhand
+use-ranged-weapon-for-looting: true
+
+# Attempt to replace headA with headB whenever possible (server-wide)
+# The head on the left is replaced with the one on the right when updated
+replace-heads:
+  'PIG_ZOMBIE': 'ZOMBIFIED_PIGLIN'
+#  'WOLF': 'WOLF|PALE'
+#  'WOLF|GRUMM': 'WOLF|PALE|GRUMM'
+
+# Forcibly assign a DropHeads mob type (id) for heads with a matching texture
+assign-dropheads-keys-to-recognized-textures: false
+
+# Similar to the above setting, but more effect (much higher performance cost)
+assign-dropheads-keys-to-recognized-uuids: false
+
+# Whether to send usage statistics to bStats
+bstats-enabled: true
+
+# Whether to enable logging for certain events
+# Placeholders: TIMESTAMP, VICTIM(_UUID), KILLER(_UUID), ITEM, SENDER, HEAD.
+log:
+  enable: true
+  filename: 'dropheads-log.txt'
+  log-mob-behead: true
+  log-mob-behead-format: '${TIMESTAMP},mob decapitated,${VICTIM},${KILLER},${ITEM}'
+  log-player-behead: true
+  log-player-behead-format: '${TIMESTAMP},player decapitated,${VICTIM},${KILLER},${ITEM}'
+  log-head-command: true
+  log-head-command-format: '${TIMESTAMP},gethead command,${SENDER},${HEAD}'
+
+# Performance/internal settings, edit at your own risk
+message-json-limit: 15000
+weapon-tellraw-component-cache-size: 5
+async-offline-profile-requests: false
+head-click-enable-profile-requests: true
+spawnhead-command-entity-select-limit: 100

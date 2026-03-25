@@ -2,7 +2,6 @@ package com.lavishmc.headHunter;
 
 import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.milkbowl.vault.economy.Economy;
@@ -60,15 +59,20 @@ public class HeadSellListener implements Listener {
         this.playerData = playerData;
     }
 
-    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
     public void onPlayerInteract(PlayerInteractEvent event) {
+        // Log every firing so we can see action/item/hand/cancelled state in console.
+        plugin.getLogger().info("[HH] interact: action=" + event.getAction()
+                + " hand=" + event.getHand()
+                + " item=" + event.getMaterial()
+                + " cancelled=" + event.isCancelled());
+
         // Only process main-hand right-clicks (Paper fires the event twice).
         if (event.getHand() != EquipmentSlot.HAND) return;
         if (event.getAction() != Action.RIGHT_CLICK_AIR
                 && event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
 
         Player player = event.getPlayer();
-        plugin.getLogger().info("[HH] interact: item=" + player.getInventory().getItemInMainHand().getType() + " isHead=" + HEAD_MATERIALS.contains(player.getInventory().getItemInMainHand().getType()));
         ItemStack item = player.getInventory().getItemInMainHand();
         if (item.getType() == Material.AIR) return;
 
@@ -132,10 +136,10 @@ public class HeadSellListener implements Listener {
                                String mobType, ConfigurationSection section) {
         int count = item.getAmount();
         long sellPrice = section.getLong("sell_price", 0);
-        long xp = section.getLong("xp", 0);
+        long xpPerHead = plugin.getConfig().getLong("xp-per-head", 1);
 
         long totalMoney = sellPrice * count;
-        long totalXP    = xp       * count;
+        long totalXP    = xpPerHead * count;
 
         if (economy != null) economy.depositPlayer(player, (double) totalMoney);
 
@@ -176,8 +180,9 @@ public class HeadSellListener implements Listener {
             if (section == null) continue;
 
             int count = stack.getAmount();
+            long xpPerHead = plugin.getConfig().getLong("xp-per-head", 1);
             totalMoney += section.getLong("sell_price", 0) * count;
-            totalXP    += section.getLong("xp", 0)        * count;
+            totalXP    += xpPerHead                        * count;
             totalHeads += count;
 
             player.getInventory().setItem(i, null);
@@ -203,42 +208,55 @@ public class HeadSellListener implements Listener {
     // -------------------------------------------------------------------------
 
     /**
-     * Shows (or replaces) a boss bar displaying the player's current level and
-     * XP progress.  The bar is hidden automatically after 3 seconds.
+     * Shows (or replaces) a boss bar displaying XP progress toward the next
+     * rankup threshold.  Format: {@code §e§lLevel 5 §8| §b67% §8| §a+50 XP}.
+     * The bar is hidden automatically after 3 seconds.
+     *
+     * <p>Level here is the XP-milestone level derived from total XP, not the
+     * stored rank level.  Rank level only changes via /rankup.</p>
      *
      * @param xpBefore the player's XP total <em>before</em> the most recent gain,
-     *                 used to detect a level-up
+     *                 used to compute how much XP was just awarded
      */
     private void showXpBar(Player player, long xpBefore) {
-        long totalXP   = playerData.getXP(player.getUniqueId());
-        int levelBefore = (int)(xpBefore  / 100);
-        int levelNow    = (int)(totalXP   / 100);
-        int xpInLevel   = (int)(totalXP   % 100);
+        UUID uuid = player.getUniqueId();
+        long totalXP  = playerData.getXP(uuid);
+        long xpGained = totalXP - xpBefore;
 
-        if (levelNow > levelBefore) {
-            player.sendMessage(msg("&aLevel up! You are now &elevel " + levelNow));
-        }
+        // Use XP-milestone level for the progress display.
+        int levelNow = playerData.levelFromXP(totalXP);
+        int tierNow  = (levelNow - 1) / 5 + 1;
 
-        Component title = Component.text(
-                "Level " + levelNow + " \u2014 " + xpInLevel + "/100 XP",
-                NamedTextColor.YELLOW
-        );
-        BossBar bar = BossBar.bossBar(
-                title,
-                xpInLevel / 100.0f,
-                BossBar.Color.YELLOW,
-                BossBar.Overlay.PROGRESS
-        );
+        // XP progress within the current XP milestone level.
+        long xpAtCurrentLevel = playerData.xpToReachLevel(levelNow);
+        long xpInLevel        = totalXP - xpAtCurrentLevel;
+        long xpForLevel       = playerData.xpForLevel(levelNow);
+        boolean maxed = levelNow >= PlayerDataManager.MAX_LEVEL;
+        int   percent = maxed ? 100 : (int) (xpInLevel * 100 / xpForLevel);
+        float fill    = maxed ? 1.0f : Math.min(1.0f, (float) xpInLevel / xpForLevel);
 
-        // Replace any bar that is still visible for this player.
-        BossBar existing = activeBossBars.remove(player.getUniqueId());
+        // Bar colour by tier: GREEN / YELLOW / WHITE (no GOLD in API) / RED / PURPLE.
+        BossBar.Color color = switch (tierNow) {
+            case 1  -> BossBar.Color.GREEN;
+            case 2  -> BossBar.Color.YELLOW;
+            case 3  -> BossBar.Color.WHITE;   // Adventure API has no GOLD
+            case 4  -> BossBar.Color.RED;
+            case 5  -> BossBar.Color.PURPLE;
+            default -> BossBar.Color.WHITE;
+        };
+
+        String titleStr = "§e§lLevel " + levelNow + " §8| §b" + percent + "% §8| §a+" + xpGained + " XP";
+        Component title = LegacyComponentSerializer.legacySection().deserialize(titleStr);
+        BossBar bar = BossBar.bossBar(title, fill, color, BossBar.Overlay.PROGRESS);
+
+        // Replace any bar still visible for this player.
+        BossBar existing = activeBossBars.remove(uuid);
         if (existing != null) player.hideBossBar(existing);
 
-        activeBossBars.put(player.getUniqueId(), bar);
+        activeBossBars.put(uuid, bar);
         player.showBossBar(bar);
 
         // Hide the bar after 3 seconds (60 ticks).
-        UUID uuid = player.getUniqueId();
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
             if (activeBossBars.get(uuid) == bar) {
                 player.hideBossBar(bar);
@@ -281,8 +299,7 @@ public class HeadSellListener implements Listener {
             }
         }
 
-        // Fallback — treat any PLAYER_HEAD as ZOMBIE if ZOMBIE is in config
-        if (plugin.getConfig().isConfigurationSection("mobs.ZOMBIE")) return "ZOMBIE";
+        // No match — silently ignore unrecognized player heads.
         return null;
     }
 

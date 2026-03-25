@@ -40,6 +40,17 @@ commands:
     permission: dropheads.debug
     permission-message: You do not have permission to do this.
 
+  hhtest:
+    description: Print full item diagnostics (material, display name, meta class, PDC keys)
+    usage: /hhtest
+    permission: dropheads.debug
+    permission-message: You do not have permission to do this.
+
+  rankup:
+    description: Spend money to advance to the next rank level
+    usage: /rankup
+    aliases: [levelup]
+
 permissions:
   dropheads.canlosehead:
     description: Killing this entity can cause their head to drop

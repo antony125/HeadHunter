@@ -100,12 +100,6 @@ shadowJar {
     exclude 'META-INF/*.DSA'
     exclude 'META-INF/*.RSA'
 
-    doLast {
-        copy {
-            from 'build/libs/HeadHunter.jar'
-            into 'run/plugins'
-        }
-    }
 }
 
 assemble.dependsOn shadowJar

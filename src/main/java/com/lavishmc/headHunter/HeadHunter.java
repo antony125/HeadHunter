@@ -13,6 +13,7 @@ import org.bukkit.plugin.RegisteredServiceProvider;
 
 import java.util.Objects;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 /**
  * HeadHunter — plugin entry point.
@@ -25,10 +26,18 @@ import java.util.stream.Collectors;
  */
 public final class HeadHunter extends DropHeads {
 
+    private static PlayerDataManager playerDataManager;
+
+    /** Returns the shared {@link PlayerDataManager} instance (available after onEnable). */
+    public static PlayerDataManager getPlayerDataManager() {
+        return playerDataManager;
+    }
+
     @Override
     public void onEvEnable() {
         // Initialise all base DropHeads functionality first.
         super.onEvEnable();
+        getLogger().info("HeadHunter economy system loaded - HeadSellListener registered");
 
         // Resolve Vault economy (soft dependency — null if unavailable).
         Economy economy = null;
@@ -41,12 +50,13 @@ public final class HeadHunter extends DropHeads {
             getLogger().warning("Vault not found or no economy plugin loaded — head selling disabled.");
         }
 
-        PlayerDataManager playerData = new PlayerDataManager();
+        playerDataManager = new PlayerDataManager(this);
 
         // Register HeadHunter-specific systems.
         getServer().getPluginManager().registerEvents(new MobStackManager(this), this);
         getServer().getPluginManager().registerEvents(new BankNoteDropListener(this), this);
-        getServer().getPluginManager().registerEvents(new HeadSellListener(this, economy, playerData), this);
+        getServer().getPluginManager().registerEvents(new HeadLoreListener(this), this);
+        getServer().getPluginManager().registerEvents(new HeadSellListener(this, economy, playerDataManager), this);
 
         // /hhdebug — prints item-in-hand diagnostics to help verify head detection.
         CommandExecutor hhDebug = (sender, command, label, args) -> {
@@ -77,5 +87,44 @@ public final class HeadHunter extends DropHeads {
             return true;
         };
         Objects.requireNonNull(getCommand("hhdebug")).setExecutor(hhDebug);
+
+        // /rankup — spend money + XP gate to advance stored rank level.
+        RankUpCommand rankUpCommand = new RankUpCommand(this, playerDataManager, economy);
+        Objects.requireNonNull(getCommand("rankup")).setExecutor(rankUpCommand);
+
+        // /hhtest — full item diagnostics: material, display name, meta class, all PDC keys.
+        CommandExecutor hhTest = (sender, command, label, args) -> {
+            if (!(sender instanceof Player player)) {
+                sender.sendMessage("This command can only be run by a player.");
+                return true;
+            }
+
+            ItemStack item = player.getInventory().getItemInMainHand();
+            ItemMeta meta  = item.getItemMeta();
+
+            String displayName = (meta != null && meta.hasDisplayName())
+                    ? PlainTextComponentSerializer.plainText().serialize(
+                            Objects.requireNonNull(meta.displayName()))
+                    : "(none)";
+
+            String metaClass = meta != null ? meta.getClass().getName() : "(no meta)";
+
+            String pdcKeys = "(no meta)";
+            if (meta != null) {
+                pdcKeys = StreamSupport
+                        .stream(meta.getPersistentDataContainer().getKeys().spliterator(), false)
+                        .map(k -> k.namespace() + ":" + k.key())
+                        .collect(Collectors.joining(", "));
+                if (pdcKeys.isEmpty()) pdcKeys = "(none)";
+            }
+
+            player.sendMessage(ChatColor.GOLD + "--- HHTest ---");
+            player.sendMessage(ChatColor.YELLOW + "Material:     " + ChatColor.WHITE + item.getType());
+            player.sendMessage(ChatColor.YELLOW + "Display name: " + ChatColor.WHITE + displayName);
+            player.sendMessage(ChatColor.YELLOW + "Meta class:   " + ChatColor.WHITE + metaClass);
+            player.sendMessage(ChatColor.YELLOW + "PDC keys:     " + ChatColor.WHITE + pdcKeys);
+            return true;
+        };
+        Objects.requireNonNull(getCommand("hhtest")).setExecutor(hhTest);
     }
 }

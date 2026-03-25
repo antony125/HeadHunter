@@ -71,11 +71,11 @@ transparent-slime-heads: false
 
 # Enable plugin auto-updates (checks for new versions and head textures)
 # Note: Disable if your console shows DropHeads errors on startup
-update-plugin: true
+update-plugin: false
 
 # Whether head-textures.txt will be overwritten for each plugin update
 # Set to false if you want to manually update textures (or set your own)
-update-textures: true
+update-textures: false
 
 # Run in debug mode (prints extra information to console)
 debug-messages: false
@@ -206,30 +206,115 @@ head-click-enable-profile-requests: true
 spawnhead-command-entity-select-limit: 100
 
 # ============================================================
+# Global XP awarded per head sold (applies to all mobs)
+# ============================================================
+xp-per-head: 1
+
+# Flat money cost deducted from the player when they use /rankup
+rankup-cost: 500
+
+# ============================================================
+# Cumulative XP thresholds to reach each level (1–25)
+# ============================================================
+level-thresholds:
+  1: 0
+  2: 100
+  3: 150
+  4: 200
+  5: 250
+  6: 300
+  7: 350
+  8: 400
+  9: 450
+  10: 500
+  11: 600
+  12: 700
+  13: 800
+  14: 900
+  15: 1000
+  16: 1200
+  17: 1400
+  18: 1600
+  19: 1800
+  20: 2000
+  21: 2500
+  22: 3000
+  23: 3500
+  24: 4000
+  25: 5000
+
+# ============================================================
 # Per-mob configuration for HeadHunter economy
 # drop_chance: probability [0.0-1.0] this mob's head drops
 # sell_price:  coins paid per head via Vault
-# xp:          XP points awarded per head (stored in PlayerDataManager)
 # tier:        bank-note tier used when drop_custom: BANK_NOTE
 # drop_custom: optional — set to BANK_NOTE to drop a note instead of a head
 # ============================================================
 mobs:
+  # ── Tier 1 ────────────────────────────────────────────────
+  PIG:
+    drop_chance: 1.0
+    sell_price: 5
+    tier: 1
+  COW:
+    drop_chance: 1.0
+    sell_price: 5
+    tier: 1
+  CHICKEN:
+    drop_chance: 1.0
+    sell_price: 3
+    tier: 1
+  SHEEP:
+    drop_chance: 1.0
+    sell_price: 5
+    tier: 1
+  WOLF:
+    drop_chance: 1.0
+    sell_price: 8
+    tier: 1
   ZOMBIE:
     drop_chance: 1.0
     sell_price: 10
-    xp: 5
     tier: 1
   SKELETON:
     drop_chance: 1.0
-    sell_price: 15
-    xp: 7
+    sell_price: 12
     tier: 1
+  SPIDER:
+    drop_chance: 1.0
+    sell_price: 10
+    tier: 1
+  CREEPER:
+    drop_chance: 1.0
+    sell_price: 15
+    tier: 1
+  # ── Tier 2 ────────────────────────────────────────────────
+  HORSE:
+    drop_chance: 1.0
+    sell_price: 20
+    tier: 2
+  SQUID:
+    drop_chance: 1.0
+    sell_price: 18
+    tier: 2
+  SLIME:
+    drop_chance: 1.0
+    sell_price: 15
+    tier: 2
+  # ── Tier 3 ────────────────────────────────────────────────
   BLAZE:
     drop_chance: 1.0
     sell_price: 150
-    xp: 75
     tier: 3
     drop_custom: BANK_NOTE
+  ENDERMAN:
+    drop_chance: 1.0
+    sell_price: 100
+    tier: 3
+  WITHER_SKELETON:
+    drop_chance: 1.0
+    sell_price: 120
+    tier: 3
 
 # Coin value paid out when a bank note of the given tier is redeemed
 bank-note-values:

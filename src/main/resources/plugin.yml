@@ -34,6 +34,12 @@ commands:
     permission: dropheads.debug
     permission-message: You do not have permission to do this.
 
+  hhdebug:
+    description: Print debug info about the item in your main hand
+    usage: /hhdebug
+    permission: dropheads.debug
+    permission-message: You do not have permission to do this.
+
 permissions:
   dropheads.canlosehead:
     description: Killing this entity can cause their head to drop

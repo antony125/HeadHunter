@@ -1,7 +1,10 @@
 package com.lavishmc.headHunter;
 
+import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
@@ -17,7 +20,9 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.util.Map;
+import java.util.HashMap;
+import java.util.Set;
+import java.util.UUID;
 
 /**
  * Handles right-click head selling and bank-note redemption.
@@ -28,19 +33,22 @@ import java.util.Map;
  */
 public class HeadSellListener implements Listener {
 
-    /** Maps vanilla skull materials to their EntityType name in the mobs config. */
-    private static final Map<Material, String> VANILLA_HEAD_TYPES = Map.of(
-            Material.ZOMBIE_HEAD,            "ZOMBIE",
-            Material.SKELETON_SKULL,         "SKELETON",
-            Material.WITHER_SKELETON_SKULL,  "WITHER_SKELETON",
-            Material.CREEPER_HEAD,           "CREEPER",
-            Material.PIGLIN_HEAD,            "PIGLIN",
-            Material.DRAGON_HEAD,            "ENDER_DRAGON"
+    /** Every skull/head material in the game. Used by {@link #isMobHead}. */
+    private static final Set<Material> HEAD_MATERIALS = Set.of(
+            Material.PLAYER_HEAD,
+            Material.ZOMBIE_HEAD,
+            Material.SKELETON_SKULL,
+            Material.WITHER_SKELETON_SKULL,
+            Material.CREEPER_HEAD,
+            Material.PIGLIN_HEAD,
+            Material.DRAGON_HEAD
     );
 
     private final JavaPlugin plugin;
     private final Economy economy;
     private final PlayerDataManager playerData;
+    /** Active XP boss bars keyed by player UUID; replaced on each XP gain. */
+    private final HashMap<UUID, BossBar> activeBossBars = new HashMap<>();
 
     /**
      * @param economy may be {@code null} if Vault is unavailable; money operations
@@ -60,6 +68,7 @@ public class HeadSellListener implements Listener {
                 && event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
 
         Player player = event.getPlayer();
+        plugin.getLogger().info("[HH] interact: item=" + player.getInventory().getItemInMainHand().getType() + " isHead=" + HEAD_MATERIALS.contains(player.getInventory().getItemInMainHand().getType()));
         ItemStack item = player.getInventory().getItemInMainHand();
         if (item.getType() == Material.AIR) return;
 
@@ -78,6 +87,8 @@ public class HeadSellListener implements Listener {
         }
 
         // ── Mob head selling ─────────────────────────────────────────────────
+        if (!isMobHead(item)) return;
+
         String mobType = getMobType(item);
         if (mobType == null) return;
         if (!plugin.getConfig().isConfigurationSection("mobs." + mobType)) return;
@@ -127,6 +138,8 @@ public class HeadSellListener implements Listener {
         long totalXP    = xp       * count;
 
         if (economy != null) economy.depositPlayer(player, (double) totalMoney);
+
+        long xpBefore = playerData.getXP(player.getUniqueId());
         playerData.addXP(player.getUniqueId(), totalXP);
 
         player.getInventory().setItemInMainHand(null);
@@ -137,6 +150,8 @@ public class HeadSellListener implements Listener {
                 + " &afor &e$" + totalMoney
                 + " &aand &e" + totalXP + " XP"
         ));
+
+        showXpBar(player, xpBefore);
     }
 
     // -------------------------------------------------------------------------
@@ -171,36 +186,104 @@ public class HeadSellListener implements Listener {
         if (totalHeads == 0) return;
 
         if (economy != null) economy.depositPlayer(player, (double) totalMoney);
+
+        long xpBefore = playerData.getXP(player.getUniqueId());
         playerData.addXP(player.getUniqueId(), totalXP);
 
         player.sendMessage(msg(
                 "&aYou sold all heads for &e$" + totalMoney
                 + " &aand &e" + totalXP + " XP"
         ));
+
+        showXpBar(player, xpBefore);
+    }
+
+    // -------------------------------------------------------------------------
+    // XP boss bar
+    // -------------------------------------------------------------------------
+
+    /**
+     * Shows (or replaces) a boss bar displaying the player's current level and
+     * XP progress.  The bar is hidden automatically after 3 seconds.
+     *
+     * @param xpBefore the player's XP total <em>before</em> the most recent gain,
+     *                 used to detect a level-up
+     */
+    private void showXpBar(Player player, long xpBefore) {
+        long totalXP   = playerData.getXP(player.getUniqueId());
+        int levelBefore = (int)(xpBefore  / 100);
+        int levelNow    = (int)(totalXP   / 100);
+        int xpInLevel   = (int)(totalXP   % 100);
+
+        if (levelNow > levelBefore) {
+            player.sendMessage(msg("&aLevel up! You are now &elevel " + levelNow));
+        }
+
+        Component title = Component.text(
+                "Level " + levelNow + " \u2014 " + xpInLevel + "/100 XP",
+                NamedTextColor.YELLOW
+        );
+        BossBar bar = BossBar.bossBar(
+                title,
+                xpInLevel / 100.0f,
+                BossBar.Color.YELLOW,
+                BossBar.Overlay.PROGRESS
+        );
+
+        // Replace any bar that is still visible for this player.
+        BossBar existing = activeBossBars.remove(player.getUniqueId());
+        if (existing != null) player.hideBossBar(existing);
+
+        activeBossBars.put(player.getUniqueId(), bar);
+        player.showBossBar(bar);
+
+        // Hide the bar after 3 seconds (60 ticks).
+        UUID uuid = player.getUniqueId();
+        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+            if (activeBossBars.get(uuid) == bar) {
+                player.hideBossBar(bar);
+                activeBossBars.remove(uuid);
+            }
+        }, 60L);
     }
 
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
 
-    /**
-     * Returns the EntityType name (e.g. {@code "ZOMBIE"}) for a mob head item,
-     * or {@code null} if the item is not a recognised mob head.
-     */
+    /** Returns {@code true} if {@code item} is any head or skull material. */
+    private static boolean isMobHead(ItemStack item) {
+        return item != null && HEAD_MATERIALS.contains(item.getType());
+    }
+
     private String getMobType(ItemStack item) {
-        if (item == null) return null;
+        if (!isMobHead(item)) return null;
 
-        // Vanilla skull materials have a fixed entity type.
-        String vanilla = VANILLA_HEAD_TYPES.get(item.getType());
-        if (vanilla != null) return vanilla;
+        // For non-PLAYER_HEAD vanilla skulls, match by material directly
+        if (item.getType() == Material.ZOMBIE_HEAD)           return "ZOMBIE";
+        if (item.getType() == Material.SKELETON_SKULL)        return "SKELETON";
+        if (item.getType() == Material.WITHER_SKELETON_SKULL) return "WITHER_SKELETON";
+        if (item.getType() == Material.CREEPER_HEAD)          return "CREEPER";
+        if (item.getType() == Material.PIGLIN_HEAD)           return "PIGLIN";
+        if (item.getType() == Material.DRAGON_HEAD)           return "ENDER_DRAGON";
 
-        // DropHeads custom heads are PLAYER_HEAD items tagged by MobDropListener.
-        if (item.getType() != Material.PLAYER_HEAD) return null;
+        // PLAYER_HEAD — try display name match first
         ItemMeta meta = item.getItemMeta();
-        if (meta == null) return null;
+        if (meta != null && meta.hasDisplayName()) {
+            String displayName = PlainTextComponentSerializer.plainText().serialize(meta.displayName());
+            ConfigurationSection mobsSection = plugin.getConfig().getConfigurationSection("mobs");
+            if (mobsSection != null) {
+                for (String mobKey : mobsSection.getKeys(false)) {
+                    if (displayName.contains(formatMobName(mobKey))) {
+                        return mobKey;
+                    }
+                }
+            }
+        }
 
-        return meta.getPersistentDataContainer()
-                .get(MobDropListener.MOB_TYPE_KEY, PersistentDataType.STRING);
+        // Fallback — treat any PLAYER_HEAD as ZOMBIE if ZOMBIE is in config
+        if (plugin.getConfig().isConfigurationSection("mobs.ZOMBIE")) return "ZOMBIE";
+        return null;
     }
 
     /** Converts {@code WITHER_SKELETON} → {@code "Wither Skeleton"}. */

@@ -1,3 +1,5 @@
+server-name: "Valdris SMP"
+
 # Announcement mode for players with the 'dropheads.silentbehead' permission
 # Overrides behead-announcement in entity-settings.yml
 # it is recommended to use 'DIRECT' or 'OFF' here
@@ -213,6 +215,9 @@ xp-per-head: 1
 # Flat money cost deducted from the player when they use /rankup
 rankup-cost: 500
 
+# Maximum number of spawners that can be combined into a single stacked spawner
+spawner-stack-max: 50
+
 # ============================================================
 # Cumulative XP thresholds to reach each level (1–25)
 # ============================================================
@@ -257,372 +262,470 @@ mobs:
     sell_price: 5
     tier: 1
     level: 1
+    cost_to_rankup: 500
+    custom_drop:
   CHICKEN:
     drop_chance: 1.0
     sell_price: 3
     tier: 1
     level: 2
+    cost_to_rankup: 1000
+    custom_drop:
   WOLF:
     drop_chance: 1.0
     sell_price: 8
     tier: 1
     level: 3
+    cost_to_rankup: 1500
+    custom_drop:
   COW:
     drop_chance: 1.0
     sell_price: 5
     tier: 1
     level: 4
+    cost_to_rankup: 2000
+    custom_drop:
   SHEEP:
     drop_chance: 1.0
     sell_price: 5
     tier: 1
     level: 5
+    cost_to_rankup: 2500
+    custom_drop:
   # ── Tier 2 (Levels 6–10) ──────────────────────────────────
   SQUID:
     drop_chance: 1.0
     sell_price: 18
     tier: 2
     level: 6
+    cost_to_rankup: 3000
+    custom_drop:
   HORSE:
     drop_chance: 1.0
     sell_price: 20
     tier: 2
     level: 7
+    cost_to_rankup: 3500
+    custom_drop:
   SLIME:
     drop_chance: 1.0
     sell_price: 15
     tier: 2
     level: 8
+    cost_to_rankup: 4000
+    custom_drop:
   RABBIT:
     drop_chance: 1.0
     sell_price: 10
     tier: 2
     level: 9
+    cost_to_rankup: 4500
+    custom_drop:
   FOX:
     drop_chance: 1.0
     sell_price: 12
     tier: 2
     level: 10
+    cost_to_rankup: 5000
+    custom_drop:
   # ── Tier 3 (Levels 11–15) ─────────────────────────────────
   ZOMBIE:
     drop_chance: 1.0
     sell_price: 10
     tier: 3
     level: 11
+    cost_to_rankup: 5500
+    custom_drop:
   SKELETON:
     drop_chance: 1.0
     sell_price: 12
     tier: 3
     level: 12
+    cost_to_rankup: 6000
+    custom_drop:
   SPIDER:
     drop_chance: 1.0
     sell_price: 10
     tier: 3
     level: 13
+    cost_to_rankup: 6500
+    custom_drop:
   CREEPER:
     drop_chance: 1.0
     sell_price: 15
     tier: 3
     level: 14
+    cost_to_rankup: 7000
+    custom_drop:
   WITCH:
     drop_chance: 1.0
     sell_price: 20
     tier: 3
     level: 15
+    cost_to_rankup: 7500
+    custom_drop:
   # ── Tier 4 (Levels 16–20) ─────────────────────────────────
   BLAZE:
     drop_chance: 1.0
     sell_price: 150
     tier: 4
     level: 16
+    cost_to_rankup: 8000
     drop_custom: BANK_NOTE
+    custom_drop:
   ENDERMAN:
     drop_chance: 1.0
     sell_price: 100
     tier: 4
     level: 17
+    cost_to_rankup: 8500
+    custom_drop:
   WITHER_SKELETON:
     drop_chance: 1.0
     sell_price: 120
     tier: 4
     level: 18
+    cost_to_rankup: 9000
+    custom_drop:
   GUARDIAN:
     drop_chance: 1.0
     sell_price: 160
     tier: 4
     level: 19
+    cost_to_rankup: 9500
+    custom_drop:
   ELDER_GUARDIAN:
     drop_chance: 1.0
     sell_price: 200
     tier: 4
     level: 20
+    cost_to_rankup: 10000
+    custom_drop:
   # ── Tier 5 (Levels 21–25) ─────────────────────────────────
   EVOKER:
     drop_chance: 1.0
     sell_price: 300
     tier: 5
     level: 21
+    cost_to_rankup: 10500
+    custom_drop:
   SHULKER:
     drop_chance: 1.0
     sell_price: 350
     tier: 5
     level: 22
+    cost_to_rankup: 11000
+    custom_drop:
   PIGLIN_BRUTE:
     drop_chance: 1.0
     sell_price: 400
     tier: 5
     level: 23
+    cost_to_rankup: 11500
+    custom_drop:
   RAVAGER:
     drop_chance: 1.0
     sell_price: 450
     tier: 5
     level: 24
+    cost_to_rankup: 12000
+    custom_drop:
   WARDEN:
     drop_chance: 1.0
     sell_price: 500
     tier: 5
     level: 25
+    cost_to_rankup: 12500
+    custom_drop:
   # ── Remaining 1.21 mobs (no progression role) ─────────────
   BAT:
     drop_chance: 1.0
     sell_price: 0
     tier: 0
     level: 0
+    custom_drop:
   BEE:
     drop_chance: 1.0
     sell_price: 0
     tier: 0
     level: 0
+    custom_drop:
   BOGGED:
     drop_chance: 1.0
     sell_price: 0
     tier: 0
     level: 0
+    custom_drop:
   BREEZE:
     drop_chance: 1.0
     sell_price: 0
     tier: 0
     level: 0
+    custom_drop:
   CAMEL:
     drop_chance: 1.0
     sell_price: 0
     tier: 0
     level: 0
+    custom_drop:
   CAT:
     drop_chance: 1.0
     sell_price: 0
     tier: 0
     level: 0
+    custom_drop:
   CAVE_SPIDER:
     drop_chance: 1.0
     sell_price: 0
     tier: 0
     level: 0
+    custom_drop:
   COD:
     drop_chance: 1.0
     sell_price: 0
     tier: 0
     level: 0
+    custom_drop:
   DOLPHIN:
     drop_chance: 1.0
     sell_price: 0
     tier: 0
     level: 0
+    custom_drop:
   DONKEY:
     drop_chance: 1.0
     sell_price: 0
     tier: 0
     level: 0
+    custom_drop:
   DROWNED:
     drop_chance: 1.0
     sell_price: 0
     tier: 0
     level: 0
+    custom_drop:
   ENDERMITE:
     drop_chance: 1.0
     sell_price: 0
     tier: 0
     level: 0
+    custom_drop:
   GHAST:
     drop_chance: 1.0
     sell_price: 0
     tier: 0
     level: 0
+    custom_drop:
   GIANT:
     drop_chance: 1.0
     sell_price: 0
     tier: 0
     level: 0
+    custom_drop:
   GLOW_SQUID:
     drop_chance: 1.0
     sell_price: 0
     tier: 0
     level: 0
+    custom_drop:
   GOAT:
     drop_chance: 1.0
     sell_price: 0
     tier: 0
     level: 0
+    custom_drop:
   HOGLIN:
     drop_chance: 1.0
     sell_price: 0
     tier: 0
     level: 0
+    custom_drop:
   HUSK:
     drop_chance: 1.0
     sell_price: 0
     tier: 0
     level: 0
+    custom_drop:
   IRON_GOLEM:
     drop_chance: 1.0
     sell_price: 0
     tier: 0
     level: 0
+    custom_drop:
   LLAMA:
     drop_chance: 1.0
     sell_price: 0
     tier: 0
     level: 0
+    custom_drop:
   MAGMA_CUBE:
     drop_chance: 1.0
     sell_price: 0
     tier: 0
     level: 0
+    custom_drop:
   MOOSHROOM:
     drop_chance: 1.0
     sell_price: 0
     tier: 0
     level: 0
+    custom_drop:
   MULE:
     drop_chance: 1.0
     sell_price: 0
     tier: 0
     level: 0
+    custom_drop:
   OCELOT:
     drop_chance: 1.0
     sell_price: 0
     tier: 0
     level: 0
+    custom_drop:
   PANDA:
     drop_chance: 1.0
     sell_price: 0
     tier: 0
     level: 0
+    custom_drop:
   PARROT:
     drop_chance: 1.0
     sell_price: 0
     tier: 0
     level: 0
+    custom_drop:
   PHANTOM:
     drop_chance: 1.0
     sell_price: 0
     tier: 0
     level: 0
+    custom_drop:
   PIGLIN:
     drop_chance: 1.0
     sell_price: 0
     tier: 0
     level: 0
+    custom_drop:
   PILLAGER:
     drop_chance: 1.0
     sell_price: 0
     tier: 0
     level: 0
+    custom_drop:
   POLAR_BEAR:
     drop_chance: 1.0
     sell_price: 0
     tier: 0
     level: 0
+    custom_drop:
   PUFFERFISH:
     drop_chance: 1.0
     sell_price: 0
     tier: 0
     level: 0
+    custom_drop:
   SALMON:
     drop_chance: 1.0
     sell_price: 0
     tier: 0
     level: 0
+    custom_drop:
   SILVERFISH:
     drop_chance: 1.0
     sell_price: 0
     tier: 0
     level: 0
+    custom_drop:
   SKELETON_HORSE:
     drop_chance: 1.0
     sell_price: 0
     tier: 0
     level: 0
+    custom_drop:
   SNOW_GOLEM:
     drop_chance: 1.0
     sell_price: 0
     tier: 0
     level: 0
+    custom_drop:
   STRAY:
     drop_chance: 1.0
     sell_price: 0
     tier: 0
     level: 0
+    custom_drop:
   STRIDER:
     drop_chance: 1.0
     sell_price: 0
     tier: 0
     level: 0
+    custom_drop:
   TADPOLE:
     drop_chance: 1.0
     sell_price: 0
     tier: 0
     level: 0
+    custom_drop:
   TRADER_LLAMA:
     drop_chance: 1.0
     sell_price: 0
     tier: 0
     level: 0
+    custom_drop:
   TROPICAL_FISH:
     drop_chance: 1.0
     sell_price: 0
     tier: 0
     level: 0
+    custom_drop:
   TURTLE:
     drop_chance: 1.0
     sell_price: 0
     tier: 0
     level: 0
+    custom_drop:
   VEX:
     drop_chance: 1.0
     sell_price: 0
     tier: 0
     level: 0
+    custom_drop:
   VINDICATOR:
     drop_chance: 1.0
     sell_price: 0
     tier: 0
     level: 0
+    custom_drop:
   WANDERING_TRADER:
     drop_chance: 1.0
     sell_price: 0
     tier: 0
     level: 0
+    custom_drop:
   ZOGLIN:
     drop_chance: 1.0
     sell_price: 0
     tier: 0
     level: 0
+    custom_drop:
   ZOMBIE_HORSE:
     drop_chance: 1.0
     sell_price: 0
     tier: 0
     level: 0
+    custom_drop:
   ZOMBIE_VILLAGER:
     drop_chance: 1.0
     sell_price: 0
     tier: 0
     level: 0
+    custom_drop:
   ZOMBIFIED_PIGLIN:
     drop_chance: 1.0
     sell_price: 0
     tier: 0
     level: 0
+    custom_drop:
 
 # Coin value paid out when a bank note of the given tier is redeemed
 bank-note-values:

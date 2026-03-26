@@ -46,6 +46,18 @@ commands:
     permission: dropheads.debug
     permission-message: You do not have permission to do this.
 
+  givespawner:
+    description: Give a player a mob spawner with a specified entity type
+    usage: /givespawner <player> <mobtype> [amount]
+    permission: headhunter.admin
+    permission-message: You do not have permission to use this command.
+
+  hh:
+    description: HeadHunter admin commands
+    usage: /hh <give|setlevel|setxp|rankup|reset|info|reload>
+    permission: headhunter.admin
+    permission-message: You do not have permission to use this command.
+
   rankup:
     description: Spend money to advance to the next rank level
     usage: /rankup

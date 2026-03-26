@@ -2,6 +2,7 @@ package com.lavishmc.headHunter;
 
 import com.lavishmc.headHunter.DropHeads.events.EntityBeheadEvent;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.event.EventHandler;
@@ -37,11 +38,8 @@ public class HeadLoreListener implements Listener {
                 plugin.getConfig().getConfigurationSection("mobs." + typeName);
         if (section == null) return;
 
-        long sellPrice = section.getLong("sell_price", 0);
-        int  tier      = section.getInt("tier", 1);
-
-        // Tier 1 → level 1, Tier 2 → level 6, Tier 3 → level 11, etc.
-        int requiredLevel = (tier - 1) * 5 + 1;
+        long sellPrice    = section.getLong("sell_price", 0);
+        int  requiredLevel = section.getInt("level", 1);
 
         ItemStack head = event.getHeadItem();
         if (head == null) return;
@@ -57,7 +55,8 @@ public class HeadLoreListener implements Listener {
         head.setItemMeta(meta);
     }
 
-    private static Component component(String legacySection) {
-        return LegacyComponentSerializer.legacySection().deserialize(legacySection);
+    private static Component component(String legacyText) {
+        return LegacyComponentSerializer.legacySection().deserialize(legacyText)
+                .decoration(TextDecoration.ITALIC, false);
     }
 }

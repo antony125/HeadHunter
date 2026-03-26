@@ -26,8 +26,10 @@ public class PlayerDataManager {
 
     /** Gson-serialisable wrapper for the on-disk JSON format. */
     private static class DataStore {
-        Map<String, Long>    xp    = new HashMap<>();
-        Map<String, Integer> level = new HashMap<>();
+        Map<String, Long>   xp    = new HashMap<>();
+        // Declared as Object so Gson never silently coerces integers to Double
+        // due to type erasure — values are read via Number.intValue() in load().
+        Map<String, Object> level = new HashMap<>();
     }
 
     private final JavaPlugin plugin;
@@ -135,10 +137,18 @@ public class PlayerDataManager {
     // -------------------------------------------------------------------------
 
     private void load() {
-        if (!dataFile.exists()) return;
+        plugin.getDataFolder().mkdirs();
+        plugin.getLogger().info("[HH] Loading playerdata from: " + dataFile.getAbsolutePath());
+        if (!dataFile.exists()) {
+            plugin.getLogger().info("[HH] playerdata.json not found — starting fresh.");
+            return;
+        }
         try (Reader reader = new FileReader(dataFile)) {
             DataStore store = GSON.fromJson(reader, DataStore.class);
-            if (store == null) return;
+            if (store == null) {
+                plugin.getLogger().warning("[HH] playerdata.json parsed as null — file may be empty or corrupt.");
+                return;
+            }
 
             // New format: {"xp":{...}, "level":{...}}
             if (store.xp != null) {
@@ -147,17 +157,22 @@ public class PlayerDataManager {
                 }
             }
             if (store.level != null) {
-                for (Map.Entry<String, Integer> e : store.level.entrySet()) {
-                    tryPutLevel(e.getKey(), e.getValue());
+                // Iterate as raw Object values — Gson can deserialize JSON integers
+                // as Double at runtime due to type erasure on Map<String, Integer>.
+                // Casting through Number.intValue() handles both Integer and Double.
+                for (Map.Entry<String, ?> e : store.level.entrySet()) {
+                    if (e.getValue() instanceof Number n) {
+                        tryPutLevel(e.getKey(), n.intValue());
+                    }
                 }
             }
 
-            // If store.xp is null the file used the old flat UUID→long format.
-            // In that case Gson will have parsed the UUID keys into store.level
-            // as strings with Double values — we just skip migration silently
-            // since the old data had no stored levels anyway.
-        } catch (IOException e) {
-            plugin.getLogger().warning("Failed to load playerdata.json: " + e.getMessage());
+            plugin.getLogger().info("[HH] Loaded playerdata.json — "
+                    + playerXP.size() + " XP entries, "
+                    + playerLevel.size() + " level entries.");
+        } catch (Exception e) {
+            plugin.getLogger().warning("[HH] Failed to load playerdata.json: "
+                    + e.getClass().getSimpleName() + ": " + e.getMessage());
         }
     }
 
@@ -168,8 +183,11 @@ public class PlayerDataManager {
         for (Map.Entry<UUID, Integer> e : playerLevel.entrySet()) store.level.put(e.getKey().toString(), e.getValue());
         try (Writer writer = new FileWriter(dataFile)) {
             GSON.toJson(store, writer);
+            plugin.getLogger().info("[HH] Saved playerdata.json — "
+                    + store.xp.size() + " XP entries, "
+                    + store.level.size() + " level entries.");
         } catch (IOException e) {
-            plugin.getLogger().warning("Failed to save playerdata.json: " + e.getMessage());
+            plugin.getLogger().warning("[HH] Failed to save playerdata.json: " + e.getMessage());
         }
     }
 
@@ -179,8 +197,7 @@ public class PlayerDataManager {
         catch (IllegalArgumentException ignored) {}
     }
 
-    private void tryPutLevel(String key, Integer value) {
-        if (value == null) return;
+    private void tryPutLevel(String key, int value) {
         try { playerLevel.put(UUID.fromString(key), value); }
         catch (IllegalArgumentException ignored) {}
     }

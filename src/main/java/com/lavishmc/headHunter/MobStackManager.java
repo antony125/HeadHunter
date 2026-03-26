@@ -122,8 +122,21 @@ public class MobStackManager implements Listener {
     // Spawn listener — merge or register
     // -------------------------------------------------------------------------
 
-    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = false)
     public void onCreatureSpawn(CreatureSpawnEvent event) {
+        boolean fromSpawner = event.getSpawnReason() == CreatureSpawnEvent.SpawnReason.SPAWNER;
+
+        if (event.isCancelled()) {
+            if (fromSpawner) {
+                // Un-cancel spawner spawns so they always go through, then fall
+                // through to the stack merge logic below.
+                event.setCancelled(false);
+            } else {
+                // Some other plugin cancelled a non-spawner spawn — leave it alone.
+                return;
+            }
+        }
+
         // If natural spawning is disabled, suppress any spawn that did not
         // originate from a spawner block, spawn egg, or command.
         if (!naturalSpawning

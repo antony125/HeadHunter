@@ -1,0 +1,38 @@
+# SpawnRate.yml — spawn interval (in seconds) per mob type for stacked spawners.
+# If a mob type is not listed here, the 'default' value is used.
+# Minimum effective value is 0.05 (1 tick).
+
+default: 5.0
+
+ZOMBIE: 4.0
+SKELETON: 4.0
+SPIDER: 4.0
+CAVE_SPIDER: 3.0
+CREEPER: 5.0
+WITHER_SKELETON: 6.0
+BLAZE: 5.0
+ENDERMAN: 8.0
+WITCH: 7.0
+SLIME: 4.0
+MAGMA_CUBE: 4.0
+GHAST: 10.0
+PIGLIN: 5.0
+HOGLIN: 6.0
+VINDICATOR: 7.0
+PILLAGER: 7.0
+RAVAGER: 12.0
+EVOKER: 10.0
+GUARDIAN: 6.0
+ELDER_GUARDIAN: 15.0
+DROWNED: 5.0
+HUSK: 4.0
+STRAY: 4.0
+PHANTOM: 8.0
+VEX: 6.0
+SHULKER: 10.0
+SILVERFISH: 3.0
+ENDERMITE: 3.0
+ZOMBIE_VILLAGER: 5.0
+ZOMBIFIED_PIGLIN: 4.0
+PIGLIN_BRUTE: 8.0
+ZOGLIN: 8.0

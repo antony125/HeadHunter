@@ -19,7 +19,9 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -99,11 +101,11 @@ public class HeadSellListener implements Listener {
 
         event.setCancelled(true);
 
+        ConfigurationSection section =
+                plugin.getConfig().getConfigurationSection("mobs." + mobType);
         if (player.isSneaking()) {
-            sellAllHeads(player);
+            sellAllHeads(player, item, mobType, section);
         } else {
-            ConfigurationSection section =
-                    plugin.getConfig().getConfigurationSection("mobs." + mobType);
             sellHeadStack(player, item, mobType, section);
         }
     }
@@ -137,9 +139,14 @@ public class HeadSellListener implements Listener {
         int mobLevel    = section.getInt("level", 0);
         int playerLevel = playerData.getLevel(player.getUniqueId());
 
+        if (mobLevel == 0) {
+            player.sendMessage(msg("&c&l[!] &e" + formatMobName(mobType) + " Head &fis not defined by level. Cannot sell!"));
+            return;
+        }
+
         // Mob is above the player's current level — block the sale entirely.
-        if (mobLevel > 0 && mobLevel > playerLevel) {
-            player.sendMessage(msg("&cYou must be level " + mobLevel + " to sell this head!"));
+        if (mobLevel > playerLevel) {
+            player.sendMessage(msg("&cYou must be level &e" + mobLevel + " &cto sell this head!"));
             return;
         }
 
@@ -148,8 +155,7 @@ public class HeadSellListener implements Listener {
         long xpPerHead = plugin.getConfig().getLong("xp-per-head", 1);
         long totalMoney = sellPrice * count;
         // XP only when mob level exactly matches the player's current level.
-        // mob level 0 (unassigned) earns no XP.
-        long totalXP = (mobLevel > 0 && mobLevel == playerLevel) ? xpPerHead * count : 0;
+        long totalXP = (mobLevel == playerLevel) ? xpPerHead * count : 0;
 
         if (economy != null) economy.depositPlayer(player, (double) totalMoney);
 
@@ -169,69 +175,57 @@ public class HeadSellListener implements Listener {
     }
 
     // -------------------------------------------------------------------------
-    // Sell-all (shift + right-click)
+    // Sell held stack (shift + right-click)
     // -------------------------------------------------------------------------
 
-    private void sellAllHeads(Player player) {
-        long totalMoney  = 0;
-        long totalXP     = 0;
-        int  totalHeads  = 0;
-        int  skipped     = 0;
+    private void sellAllHeads(Player player, ItemStack item,
+                               String mobType, ConfigurationSection section) {
+        int mobLevel    = section.getInt("level", 0);
+        int playerLevel = playerData.getLevel(player.getUniqueId());
 
-        UUID uuid        = player.getUniqueId();
-        int  playerLevel = playerData.getLevel(uuid);
-        long xpPerHead   = plugin.getConfig().getLong("xp-per-head", 1);
+        if (mobLevel == 0) {
+            player.sendMessage(msg("&c&l[!] &e" + formatMobName(mobType) + " Head &fis not defined by level. Cannot sell!"));
+            return;
+        }
 
+        if (mobLevel > playerLevel) {
+            player.sendMessage(msg("&cYou must be level &e" + mobLevel + " &cto sell this head!"));
+            return;
+        }
+
+        long sellPrice = section.getLong("sell_price", 0);
+        long xpPerHead = plugin.getConfig().getLong("xp-per-head", 1);
+        boolean awardsXP = mobLevel > 0 && mobLevel == playerLevel;
+
+        // Scan entire inventory for all stacks matching this mob type.
+        int totalCount = 0;
         ItemStack[] contents = player.getInventory().getContents();
         for (int i = 0; i < contents.length; i++) {
-            ItemStack stack = contents[i];
-            if (stack == null) continue;
-
-            String mobType = getMobType(stack);
-            if (mobType == null) continue;
-
-            ConfigurationSection section =
-                    plugin.getConfig().getConfigurationSection("mobs." + mobType);
-            if (section == null) continue;
-
-            int mobLevel = section.getInt("level", 0);
-
-            // Skip heads the player hasn't unlocked yet; count them for feedback.
-            if (mobLevel > 0 && mobLevel > playerLevel) {
-                skipped++;
-                continue;
-            }
-
-            int count = stack.getAmount();
-            totalMoney += section.getLong("sell_price", 0) * count;
-            // XP only when mob level exactly matches player's current level (not 0).
-            if (mobLevel > 0 && mobLevel == playerLevel) totalXP += xpPerHead * count;
-            totalHeads += count;
-
+            ItemStack slot = contents[i];
+            if (slot == null) continue;
+            if (!mobType.equals(getMobType(slot))) continue;
+            totalCount += slot.getAmount();
             player.getInventory().setItem(i, null);
         }
 
-        if (totalHeads == 0 && skipped == 0) return;
+        if (totalCount == 0) return;
 
-        if (totalHeads > 0) {
-            if (economy != null) economy.depositPlayer(player, (double) totalMoney);
+        long totalMoney = sellPrice * totalCount;
+        long totalXP    = awardsXP ? xpPerHead * totalCount : 0;
 
-            long xpBefore = playerData.getXP(uuid);
-            if (totalXP > 0) playerData.addXP(uuid, totalXP);
+        if (economy != null) economy.depositPlayer(player, (double) totalMoney);
 
-            player.sendMessage(msg(
-                    "&aYou sold all heads for &e$" + totalMoney
-                    + " &aand &e" + totalXP + " XP"
-            ));
+        long xpBefore = playerData.getXP(player.getUniqueId());
+        if (totalXP > 0) playerData.addXP(player.getUniqueId(), totalXP);
 
-            showXpBar(player, xpBefore);
-        }
+        String mobName = formatMobName(mobType);
+        player.sendMessage(msg(
+                "&aYou sold &e" + totalCount + " " + mobName + " Head(s)"
+                + " &afor &e$" + totalMoney
+                + " &aand &e" + totalXP + " XP"
+        ));
 
-        if (skipped > 0) {
-            player.sendMessage(msg(
-                    "&cSkipped &e" + skipped + " &chead type(s) — required level not yet reached."
-            ));
-        }
+        showXpBar(player, xpBefore);
     }
 
     // -------------------------------------------------------------------------
@@ -313,13 +307,16 @@ public class HeadSellListener implements Listener {
         if (item.getType() == Material.PIGLIN_HEAD)           return "PIGLIN";
         if (item.getType() == Material.DRAGON_HEAD)           return "ENDER_DRAGON";
 
-        // PLAYER_HEAD — try display name match first
+        // PLAYER_HEAD — try display name match first.
+        // Sort keys longest-name-first so "Zombie Villager" beats "Zombie", etc.
         ItemMeta meta = item.getItemMeta();
         if (meta != null && meta.hasDisplayName()) {
             String displayName = PlainTextComponentSerializer.plainText().serialize(meta.displayName());
             ConfigurationSection mobsSection = plugin.getConfig().getConfigurationSection("mobs");
             if (mobsSection != null) {
-                for (String mobKey : mobsSection.getKeys(false)) {
+                List<String> sortedKeys = new ArrayList<>(mobsSection.getKeys(false));
+                sortedKeys.sort((a, b) -> formatMobName(b).length() - formatMobName(a).length());
+                for (String mobKey : sortedKeys) {
                     if (displayName.contains(formatMobName(mobKey))) {
                         return mobKey;
                     }

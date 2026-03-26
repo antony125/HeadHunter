@@ -9,7 +9,8 @@
       "Bash(xargs grep:*)",
       "Bash(jar tf:*)",
       "Bash(./gradlew shadowJar)",
-      "Bash(javap:*)"
+      "Bash(javap:*)",
+      "Bash(./gradlew build:*)"
     ]
   }
 }

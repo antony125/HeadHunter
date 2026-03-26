@@ -52,11 +52,18 @@ public final class HeadHunter extends DropHeads {
 
         playerDataManager = new PlayerDataManager(this);
 
+        SpawnRateConfig spawnRateConfig = new SpawnRateConfig(this);
+
         // Register HeadHunter-specific systems.
         getServer().getPluginManager().registerEvents(new MobStackManager(this), this);
         getServer().getPluginManager().registerEvents(new BankNoteDropListener(this), this);
         getServer().getPluginManager().registerEvents(new HeadLoreListener(this), this);
         getServer().getPluginManager().registerEvents(new HeadSellListener(this, economy, playerDataManager), this);
+        getServer().getPluginManager().registerEvents(new SunlightProtectionListener(), this);
+        getServer().getPluginManager().registerEvents(new SpawnerStackManager(this, spawnRateConfig), this);
+
+        // Start the sidebar scoreboard (updates every second).
+        new SidebarManager(this, playerDataManager, economy).start();
 
         // /hhdebug — prints item-in-hand diagnostics to help verify head detection.
         CommandExecutor hhDebug = (sender, command, label, args) -> {
@@ -87,6 +94,16 @@ public final class HeadHunter extends DropHeads {
             return true;
         };
         Objects.requireNonNull(getCommand("hhdebug")).setExecutor(hhDebug);
+
+        // /givespawner — give a configured spawner item to a player.
+        GiveSpawnerCommand giveSpawner = new GiveSpawnerCommand(this);
+        Objects.requireNonNull(getCommand("givespawner")).setExecutor(giveSpawner);
+        Objects.requireNonNull(getCommand("givespawner")).setTabCompleter(giveSpawner);
+
+        // /hh — admin command suite.
+        HHAdminCommand hhAdmin = new HHAdminCommand(this, playerDataManager, economy, spawnRateConfig);
+        Objects.requireNonNull(getCommand("hh")).setExecutor(hhAdmin);
+        Objects.requireNonNull(getCommand("hh")).setTabCompleter(hhAdmin);
 
         // /rankup — spend money + XP gate to advance stored rank level.
         RankUpCommand rankUpCommand = new RankUpCommand(this, playerDataManager, economy);

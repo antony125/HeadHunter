@@ -57,6 +57,7 @@ public final class HeadHunter extends DropHeads {
         getServer().getPluginManager().registerEvents(new BankNoteDropListener(this), this);
         getServer().getPluginManager().registerEvents(new HeadLoreListener(this), this);
         getServer().getPluginManager().registerEvents(new HeadSellListener(this, economy, playerDataManager), this);
+        getServer().getPluginManager().registerEvents(new HeadEquipListener(this), this);
 
         // /hhdebug — prints item-in-hand diagnostics to help verify head detection.
         CommandExecutor hhDebug = (sender, command, label, args) -> {
@@ -91,6 +92,16 @@ public final class HeadHunter extends DropHeads {
         // /rankup — spend money + XP gate to advance stored rank level.
         RankUpCommand rankUpCommand = new RankUpCommand(this, playerDataManager, economy);
         Objects.requireNonNull(getCommand("rankup")).setExecutor(rankUpCommand);
+
+        // /testlevelup — preview rank-up effects without changing level (op-only).
+        Objects.requireNonNull(getCommand("testlevelup")).setExecutor((sender, cmd, label, args) -> {
+            if (!(sender instanceof Player player)) {
+                sender.sendMessage("This command can only be run by a player.");
+                return true;
+            }
+            rankUpCommand.runTestEffects(player);
+            return true;
+        });
 
         // /hhtest — full item diagnostics: material, display name, meta class, all PDC keys.
         CommandExecutor hhTest = (sender, command, label, args) -> {

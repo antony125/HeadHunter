@@ -51,6 +51,12 @@ commands:
     usage: /rankup
     aliases: [levelup]
 
+  testlevelup:
+    description: Preview rank-up visual effects without changing level
+    usage: /testlevelup
+    permission: headhunter.admin
+    permission-message: You do not have permission to do this.
+
 permissions:
   dropheads.canlosehead:
     description: Killing this entity can cause their head to drop
@@ -140,6 +146,10 @@ permissions:
 
   dropheads.droprate.edit.file:
     description: Permission to reconfigured rates with /droprate
+    default: op
+
+  headhunter.admin:
+    description: Permission to use HeadHunter admin commands (e.g. /testlevelup)
     default: op
 
   dropheads.debug:

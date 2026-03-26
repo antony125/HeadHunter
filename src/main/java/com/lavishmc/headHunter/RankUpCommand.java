@@ -3,13 +3,16 @@ package com.lavishmc.headHunter;
 import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import net.kyori.adventure.title.Title;
 import net.milkbowl.vault.economy.Economy;
+import org.bukkit.Particle;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.UUID;
 
@@ -67,6 +70,9 @@ public class RankUpCommand implements CommandExecutor {
 
         // ── Money gate ───────────────────────────────────────────────────────
         long rankupCost = plugin.getConfig().getLong("rankup-cost", 500L);
+        plugin.getLogger().info("[HH] /rankup money check: economy=" + (economy != null)
+                + " balance=" + (economy != null ? economy.getBalance(player) : "N/A")
+                + " cost=" + rankupCost);
         if (economy != null && economy.getBalance(player) < rankupCost) {
             player.sendMessage(msg("&cYou need &e$" + rankupCost + " &cto rank up!"));
             return true;
@@ -79,6 +85,7 @@ public class RankUpCommand implements CommandExecutor {
 
         int oldTier = playerData.getTier(uuid);
         playerData.setLevel(uuid, nextLevel);
+        playerData.setXP(uuid, 0);
         int newTier = playerData.getTier(uuid);
 
         player.sendMessage(msg("&a&lRANK UP! &eYou are now level " + nextLevel + "!"));
@@ -87,7 +94,67 @@ public class RankUpCommand implements CommandExecutor {
         }
 
         showRankUpBar(player, nextLevel, newTier);
+        playRankUpEffects(player, nextLevel, oldTier, newTier);
         return true;
+    }
+
+    // -------------------------------------------------------------------------
+    // Rank-up effects
+    // -------------------------------------------------------------------------
+
+    private void playRankUpEffects(Player player, int newLevel, int oldTier, int newTier) {
+        // Title: §6§lRANK UP! / §eYou are now Level X!
+        Title title = Title.title(
+                LegacyComponentSerializer.legacySection().deserialize("§6§lRANK UP!"),
+                LegacyComponentSerializer.legacySection().deserialize("§eYou are now Level " + newLevel + "!"),
+                Title.Times.times(
+                        Duration.ofMillis(500),
+                        Duration.ofMillis(3000),
+                        Duration.ofMillis(1000)
+                )
+        );
+        player.showTitle(title);
+
+        // Totem of undying particle burst.
+        player.getWorld().spawnParticle(
+                Particle.TOTEM_OF_UNDYING,
+                player.getLocation().add(0, 1, 0),
+                200, 0.5, 1.0, 0.5, 0.3
+        );
+
+        // END_ROD particle burst — sphere radius 2 around the player.
+        player.getWorld().spawnParticle(
+                Particle.END_ROD,
+                player.getLocation().add(0, 1, 0),
+                150, 1.5, 1.5, 1.5, 0.1
+        );
+
+        // Firework burst at the player's location.
+        org.bukkit.Color[] brightColors = {
+                org.bukkit.Color.AQUA, org.bukkit.Color.FUCHSIA, org.bukkit.Color.YELLOW,
+                org.bukkit.Color.LIME, org.bukkit.Color.RED, org.bukkit.Color.ORANGE
+        };
+        org.bukkit.Color randomColor = brightColors[(int) (Math.random() * brightColors.length)];
+
+        org.bukkit.entity.Firework firework = player.getWorld().spawn(
+                player.getLocation(), org.bukkit.entity.Firework.class);
+        org.bukkit.inventory.meta.FireworkMeta meta = firework.getFireworkMeta();
+        meta.setPower(1);
+        meta.addEffect(org.bukkit.FireworkEffect.builder()
+                .withColor(randomColor)
+                .with(org.bukkit.FireworkEffect.Type.BALL_LARGE)
+                .flicker(true)
+                .trail(true)
+                .build());
+        firework.setFireworkMeta(meta);
+
+        // Server-wide broadcast on tier unlock.
+        if (newTier > oldTier) {
+            Component broadcast = LegacyComponentSerializer.legacySection().deserialize(
+                    "§6§l[!] §e" + player.getName() + " §6has reached §b§lTier " + newTier + "§6! §7\uD83C\uDF89"
+            );
+            plugin.getServer().getOnlinePlayers().forEach(p -> p.sendMessage(broadcast));
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -131,6 +198,13 @@ public class RankUpCommand implements CommandExecutor {
                 activeBossBars.remove(uuid);
             }
         }, 60L);
+    }
+
+    /** Fires all rank-up visual effects on the player without changing their level. */
+    public void runTestEffects(Player player) {
+        int level = playerData.getLevel(player.getUniqueId());
+        int tier  = playerData.getTier(player.getUniqueId());
+        playRankUpEffects(player, level, tier - 1, tier);
     }
 
     private static Component msg(String legacy) {

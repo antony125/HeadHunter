@@ -134,17 +134,27 @@ public class HeadSellListener implements Listener {
 
     private void sellHeadStack(Player player, ItemStack item,
                                String mobType, ConfigurationSection section) {
-        int count = item.getAmount();
+        int mobLevel    = section.getInt("level", 0);
+        int playerLevel = playerData.getLevel(player.getUniqueId());
+
+        // Mob is above the player's current level — block the sale entirely.
+        if (mobLevel > 0 && mobLevel > playerLevel) {
+            player.sendMessage(msg("&cYou must be level " + mobLevel + " to sell this head!"));
+            return;
+        }
+
+        int count      = item.getAmount();
         long sellPrice = section.getLong("sell_price", 0);
         long xpPerHead = plugin.getConfig().getLong("xp-per-head", 1);
-
         long totalMoney = sellPrice * count;
-        long totalXP    = xpPerHead * count;
+        // XP only when mob level exactly matches the player's current level.
+        // mob level 0 (unassigned) earns no XP.
+        long totalXP = (mobLevel > 0 && mobLevel == playerLevel) ? xpPerHead * count : 0;
 
         if (economy != null) economy.depositPlayer(player, (double) totalMoney);
 
         long xpBefore = playerData.getXP(player.getUniqueId());
-        playerData.addXP(player.getUniqueId(), totalXP);
+        if (totalXP > 0) playerData.addXP(player.getUniqueId(), totalXP);
 
         player.getInventory().setItemInMainHand(null);
 
@@ -163,9 +173,14 @@ public class HeadSellListener implements Listener {
     // -------------------------------------------------------------------------
 
     private void sellAllHeads(Player player) {
-        long totalMoney = 0;
-        long totalXP    = 0;
-        int  totalHeads = 0;
+        long totalMoney  = 0;
+        long totalXP     = 0;
+        int  totalHeads  = 0;
+        int  skipped     = 0;
+
+        UUID uuid        = player.getUniqueId();
+        int  playerLevel = playerData.getLevel(uuid);
+        long xpPerHead   = plugin.getConfig().getLong("xp-per-head", 1);
 
         ItemStack[] contents = player.getInventory().getContents();
         for (int i = 0; i < contents.length; i++) {
@@ -179,28 +194,44 @@ public class HeadSellListener implements Listener {
                     plugin.getConfig().getConfigurationSection("mobs." + mobType);
             if (section == null) continue;
 
+            int mobLevel = section.getInt("level", 0);
+
+            // Skip heads the player hasn't unlocked yet; count them for feedback.
+            if (mobLevel > 0 && mobLevel > playerLevel) {
+                skipped++;
+                continue;
+            }
+
             int count = stack.getAmount();
-            long xpPerHead = plugin.getConfig().getLong("xp-per-head", 1);
             totalMoney += section.getLong("sell_price", 0) * count;
-            totalXP    += xpPerHead                        * count;
+            // XP only when mob level exactly matches player's current level (not 0).
+            if (mobLevel > 0 && mobLevel == playerLevel) totalXP += xpPerHead * count;
             totalHeads += count;
 
             player.getInventory().setItem(i, null);
         }
 
-        if (totalHeads == 0) return;
+        if (totalHeads == 0 && skipped == 0) return;
 
-        if (economy != null) economy.depositPlayer(player, (double) totalMoney);
+        if (totalHeads > 0) {
+            if (economy != null) economy.depositPlayer(player, (double) totalMoney);
 
-        long xpBefore = playerData.getXP(player.getUniqueId());
-        playerData.addXP(player.getUniqueId(), totalXP);
+            long xpBefore = playerData.getXP(uuid);
+            if (totalXP > 0) playerData.addXP(uuid, totalXP);
 
-        player.sendMessage(msg(
-                "&aYou sold all heads for &e$" + totalMoney
-                + " &aand &e" + totalXP + " XP"
-        ));
+            player.sendMessage(msg(
+                    "&aYou sold all heads for &e$" + totalMoney
+                    + " &aand &e" + totalXP + " XP"
+            ));
 
-        showXpBar(player, xpBefore);
+            showXpBar(player, xpBefore);
+        }
+
+        if (skipped > 0) {
+            player.sendMessage(msg(
+                    "&cSkipped &e" + skipped + " &chead type(s) — required level not yet reached."
+            ));
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -212,9 +243,6 @@ public class HeadSellListener implements Listener {
      * rankup threshold.  Format: {@code §e§lLevel 5 §8| §b67% §8| §a+50 XP}.
      * The bar is hidden automatically after 3 seconds.
      *
-     * <p>Level here is the XP-milestone level derived from total XP, not the
-     * stored rank level.  Rank level only changes via /rankup.</p>
-     *
      * @param xpBefore the player's XP total <em>before</em> the most recent gain,
      *                 used to compute how much XP was just awarded
      */
@@ -223,8 +251,8 @@ public class HeadSellListener implements Listener {
         long totalXP  = playerData.getXP(uuid);
         long xpGained = totalXP - xpBefore;
 
-        // Use XP-milestone level for the progress display.
-        int levelNow = playerData.levelFromXP(totalXP);
+        // Use the stored rank level (gated by /rankup), not raw XP calculation.
+        int levelNow = playerData.getLevel(uuid);
         int tierNow  = (levelNow - 1) / 5 + 1;
 
         // XP progress within the current XP milestone level.
@@ -232,7 +260,7 @@ public class HeadSellListener implements Listener {
         long xpInLevel        = totalXP - xpAtCurrentLevel;
         long xpForLevel       = playerData.xpForLevel(levelNow);
         boolean maxed = levelNow >= PlayerDataManager.MAX_LEVEL;
-        int   percent = maxed ? 100 : (int) (xpInLevel * 100 / xpForLevel);
+        int   percent = maxed ? 100 : (int) Math.min(100, (xpInLevel * 100 / xpForLevel));
         float fill    = maxed ? 1.0f : Math.min(1.0f, (float) xpInLevel / xpForLevel);
 
         // Bar colour by tier: GREEN / YELLOW / WHITE (no GOLD in API) / RED / PURPLE.

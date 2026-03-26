@@ -50,8 +50,21 @@ public class PlayerDataManager {
         return playerXP.getOrDefault(uuid, 0L);
     }
 
+    public void setXP(UUID uuid, long amount) {
+        playerXP.put(uuid, Math.max(0, amount));
+        save();
+    }
+
     public void addXP(UUID uuid, long amount) {
         playerXP.merge(uuid, amount, Long::sum);
+        // Cap XP at the threshold for the next level above the player's stored rank.
+        int currentLevel = getLevel(uuid);
+        if (currentLevel < MAX_LEVEL) {
+            long cap = xpToReachLevel(currentLevel + 1);
+            if (playerXP.get(uuid) > cap) {
+                playerXP.put(uuid, cap);
+            }
+        }
         save();
     }
 

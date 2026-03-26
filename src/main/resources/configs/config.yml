@@ -251,70 +251,378 @@ level-thresholds:
 # drop_custom: optional — set to BANK_NOTE to drop a note instead of a head
 # ============================================================
 mobs:
-  # ── Tier 1 ────────────────────────────────────────────────
+  # ── Tier 1 (Levels 1–5) ───────────────────────────────────
   PIG:
     drop_chance: 1.0
     sell_price: 5
     tier: 1
-  COW:
-    drop_chance: 1.0
-    sell_price: 5
-    tier: 1
+    level: 1
   CHICKEN:
     drop_chance: 1.0
     sell_price: 3
     tier: 1
-  SHEEP:
-    drop_chance: 1.0
-    sell_price: 5
-    tier: 1
+    level: 2
   WOLF:
     drop_chance: 1.0
     sell_price: 8
     tier: 1
-  ZOMBIE:
+    level: 3
+  COW:
     drop_chance: 1.0
-    sell_price: 10
+    sell_price: 5
     tier: 1
-  SKELETON:
+    level: 4
+  SHEEP:
     drop_chance: 1.0
-    sell_price: 12
+    sell_price: 5
     tier: 1
-  SPIDER:
-    drop_chance: 1.0
-    sell_price: 10
-    tier: 1
-  CREEPER:
-    drop_chance: 1.0
-    sell_price: 15
-    tier: 1
-  # ── Tier 2 ────────────────────────────────────────────────
-  HORSE:
-    drop_chance: 1.0
-    sell_price: 20
-    tier: 2
+    level: 5
+  # ── Tier 2 (Levels 6–10) ──────────────────────────────────
   SQUID:
     drop_chance: 1.0
     sell_price: 18
     tier: 2
+    level: 6
+  HORSE:
+    drop_chance: 1.0
+    sell_price: 20
+    tier: 2
+    level: 7
   SLIME:
     drop_chance: 1.0
     sell_price: 15
     tier: 2
-  # ── Tier 3 ────────────────────────────────────────────────
+    level: 8
+  RABBIT:
+    drop_chance: 1.0
+    sell_price: 10
+    tier: 2
+    level: 9
+  FOX:
+    drop_chance: 1.0
+    sell_price: 12
+    tier: 2
+    level: 10
+  # ── Tier 3 (Levels 11–15) ─────────────────────────────────
+  ZOMBIE:
+    drop_chance: 1.0
+    sell_price: 10
+    tier: 3
+    level: 11
+  SKELETON:
+    drop_chance: 1.0
+    sell_price: 12
+    tier: 3
+    level: 12
+  SPIDER:
+    drop_chance: 1.0
+    sell_price: 10
+    tier: 3
+    level: 13
+  CREEPER:
+    drop_chance: 1.0
+    sell_price: 15
+    tier: 3
+    level: 14
+  WITCH:
+    drop_chance: 1.0
+    sell_price: 20
+    tier: 3
+    level: 15
+  # ── Tier 4 (Levels 16–20) ─────────────────────────────────
   BLAZE:
     drop_chance: 1.0
     sell_price: 150
-    tier: 3
+    tier: 4
+    level: 16
     drop_custom: BANK_NOTE
   ENDERMAN:
     drop_chance: 1.0
     sell_price: 100
-    tier: 3
+    tier: 4
+    level: 17
   WITHER_SKELETON:
     drop_chance: 1.0
     sell_price: 120
-    tier: 3
+    tier: 4
+    level: 18
+  GUARDIAN:
+    drop_chance: 1.0
+    sell_price: 160
+    tier: 4
+    level: 19
+  ELDER_GUARDIAN:
+    drop_chance: 1.0
+    sell_price: 200
+    tier: 4
+    level: 20
+  # ── Tier 5 (Levels 21–25) ─────────────────────────────────
+  EVOKER:
+    drop_chance: 1.0
+    sell_price: 300
+    tier: 5
+    level: 21
+  SHULKER:
+    drop_chance: 1.0
+    sell_price: 350
+    tier: 5
+    level: 22
+  PIGLIN_BRUTE:
+    drop_chance: 1.0
+    sell_price: 400
+    tier: 5
+    level: 23
+  RAVAGER:
+    drop_chance: 1.0
+    sell_price: 450
+    tier: 5
+    level: 24
+  WARDEN:
+    drop_chance: 1.0
+    sell_price: 500
+    tier: 5
+    level: 25
+  # ── Remaining 1.21 mobs (no progression role) ─────────────
+  BAT:
+    drop_chance: 1.0
+    sell_price: 0
+    tier: 0
+    level: 0
+  BEE:
+    drop_chance: 1.0
+    sell_price: 0
+    tier: 0
+    level: 0
+  BOGGED:
+    drop_chance: 1.0
+    sell_price: 0
+    tier: 0
+    level: 0
+  BREEZE:
+    drop_chance: 1.0
+    sell_price: 0
+    tier: 0
+    level: 0
+  CAMEL:
+    drop_chance: 1.0
+    sell_price: 0
+    tier: 0
+    level: 0
+  CAT:
+    drop_chance: 1.0
+    sell_price: 0
+    tier: 0
+    level: 0
+  CAVE_SPIDER:
+    drop_chance: 1.0
+    sell_price: 0
+    tier: 0
+    level: 0
+  COD:
+    drop_chance: 1.0
+    sell_price: 0
+    tier: 0
+    level: 0
+  DOLPHIN:
+    drop_chance: 1.0
+    sell_price: 0
+    tier: 0
+    level: 0
+  DONKEY:
+    drop_chance: 1.0
+    sell_price: 0
+    tier: 0
+    level: 0
+  DROWNED:
+    drop_chance: 1.0
+    sell_price: 0
+    tier: 0
+    level: 0
+  ENDERMITE:
+    drop_chance: 1.0
+    sell_price: 0
+    tier: 0
+    level: 0
+  GHAST:
+    drop_chance: 1.0
+    sell_price: 0
+    tier: 0
+    level: 0
+  GIANT:
+    drop_chance: 1.0
+    sell_price: 0
+    tier: 0
+    level: 0
+  GLOW_SQUID:
+    drop_chance: 1.0
+    sell_price: 0
+    tier: 0
+    level: 0
+  GOAT:
+    drop_chance: 1.0
+    sell_price: 0
+    tier: 0
+    level: 0
+  HOGLIN:
+    drop_chance: 1.0
+    sell_price: 0
+    tier: 0
+    level: 0
+  HUSK:
+    drop_chance: 1.0
+    sell_price: 0
+    tier: 0
+    level: 0
+  IRON_GOLEM:
+    drop_chance: 1.0
+    sell_price: 0
+    tier: 0
+    level: 0
+  LLAMA:
+    drop_chance: 1.0
+    sell_price: 0
+    tier: 0
+    level: 0
+  MAGMA_CUBE:
+    drop_chance: 1.0
+    sell_price: 0
+    tier: 0
+    level: 0
+  MOOSHROOM:
+    drop_chance: 1.0
+    sell_price: 0
+    tier: 0
+    level: 0
+  MULE:
+    drop_chance: 1.0
+    sell_price: 0
+    tier: 0
+    level: 0
+  OCELOT:
+    drop_chance: 1.0
+    sell_price: 0
+    tier: 0
+    level: 0
+  PANDA:
+    drop_chance: 1.0
+    sell_price: 0
+    tier: 0
+    level: 0
+  PARROT:
+    drop_chance: 1.0
+    sell_price: 0
+    tier: 0
+    level: 0
+  PHANTOM:
+    drop_chance: 1.0
+    sell_price: 0
+    tier: 0
+    level: 0
+  PIGLIN:
+    drop_chance: 1.0
+    sell_price: 0
+    tier: 0
+    level: 0
+  PILLAGER:
+    drop_chance: 1.0
+    sell_price: 0
+    tier: 0
+    level: 0
+  POLAR_BEAR:
+    drop_chance: 1.0
+    sell_price: 0
+    tier: 0
+    level: 0
+  PUFFERFISH:
+    drop_chance: 1.0
+    sell_price: 0
+    tier: 0
+    level: 0
+  SALMON:
+    drop_chance: 1.0
+    sell_price: 0
+    tier: 0
+    level: 0
+  SILVERFISH:
+    drop_chance: 1.0
+    sell_price: 0
+    tier: 0
+    level: 0
+  SKELETON_HORSE:
+    drop_chance: 1.0
+    sell_price: 0
+    tier: 0
+    level: 0
+  SNOW_GOLEM:
+    drop_chance: 1.0
+    sell_price: 0
+    tier: 0
+    level: 0
+  STRAY:
+    drop_chance: 1.0
+    sell_price: 0
+    tier: 0
+    level: 0
+  STRIDER:
+    drop_chance: 1.0
+    sell_price: 0
+    tier: 0
+    level: 0
+  TADPOLE:
+    drop_chance: 1.0
+    sell_price: 0
+    tier: 0
+    level: 0
+  TRADER_LLAMA:
+    drop_chance: 1.0
+    sell_price: 0
+    tier: 0
+    level: 0
+  TROPICAL_FISH:
+    drop_chance: 1.0
+    sell_price: 0
+    tier: 0
+    level: 0
+  TURTLE:
+    drop_chance: 1.0
+    sell_price: 0
+    tier: 0
+    level: 0
+  VEX:
+    drop_chance: 1.0
+    sell_price: 0
+    tier: 0
+    level: 0
+  VINDICATOR:
+    drop_chance: 1.0
+    sell_price: 0
+    tier: 0
+    level: 0
+  WANDERING_TRADER:
+    drop_chance: 1.0
+    sell_price: 0
+    tier: 0
+    level: 0
+  ZOGLIN:
+    drop_chance: 1.0
+    sell_price: 0
+    tier: 0
+    level: 0
+  ZOMBIE_HORSE:
+    drop_chance: 1.0
+    sell_price: 0
+    tier: 0
+    level: 0
+  ZOMBIE_VILLAGER:
+    drop_chance: 1.0
+    sell_price: 0
+    tier: 0
+    level: 0
+  ZOMBIFIED_PIGLIN:
+    drop_chance: 1.0
+    sell_price: 0
+    tier: 0
+    level: 0
 
 # Coin value paid out when a bank note of the given tier is redeemed
 bank-note-values:

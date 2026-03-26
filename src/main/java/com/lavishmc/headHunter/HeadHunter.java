@@ -57,7 +57,6 @@ public final class HeadHunter extends DropHeads {
         getServer().getPluginManager().registerEvents(new BankNoteDropListener(this), this);
         getServer().getPluginManager().registerEvents(new HeadLoreListener(this), this);
         getServer().getPluginManager().registerEvents(new HeadSellListener(this, economy, playerDataManager), this);
-        getServer().getPluginManager().registerEvents(new HeadEquipListener(this), this);
 
         // /hhdebug — prints item-in-hand diagnostics to help verify head detection.
         CommandExecutor hhDebug = (sender, command, label, args) -> {

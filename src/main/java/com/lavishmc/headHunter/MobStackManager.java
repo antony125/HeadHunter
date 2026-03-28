@@ -203,7 +203,12 @@ public class MobStackManager implements Listener {
         // Register this entity as the stack leader for its type in this chunk.
         stacks.computeIfAbsent(key, k -> new HashMap<>())
               .put(type, spawned.getUniqueId());
-        setStackSize(spawned, 1);
+        // Only seed to 1 when no count has already been set — SpawnerStackManager
+        // overrides the PDC with the real batch count after this event returns,
+        // so we must not clobber a value it may have already written.
+        if (!spawned.getPersistentDataContainer().has(stackKey, PersistentDataType.INTEGER)) {
+            setStackSize(spawned, 1);
+        }
         // No visible name at size 1 — keep it clean.
 
         // Apply a permanent max-strength Slowness effect so the mob cannot move

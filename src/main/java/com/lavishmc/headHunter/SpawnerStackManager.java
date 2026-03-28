@@ -282,19 +282,26 @@ public class SpawnerStackManager implements Listener {
                 existingLeader.setCustomName("§e§l" + formatMobName(type) + " §f§lx§6§l" + next);
                 existingLeader.setCustomNameVisible(true);
             } else {
-                // No stack yet — spawn 1 entity and seed its PDC with the full
-                // stackCount so it immediately represents the whole spawner's batch.
-                org.bukkit.entity.Entity spawned = loc.getWorld().spawnEntity(
-                        jitterLocation(loc),
-                        type,
-                        org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.SPAWNER
-                );
-                if (spawned instanceof LivingEntity le && stackCount > 1) {
-                    le.getPersistentDataContainer()
-                            .set(MOB_STACK_KEY, PersistentDataType.INTEGER, stackCount);
-                    le.setCustomName("§e§l" + formatMobName(type) + " §f§lx§6§l" + stackCount);
-                    le.setCustomNameVisible(true);
-                }
+                // No stack yet — defer to the next tick so MobStackManager's
+                // CreatureSpawnEvent handler finishes registering the entity as a
+                // leader (size 1) before we override the PDC with stackCount.
+                plugin.getServer().getScheduler().runTask(plugin, () -> {
+                    // Re-check the block is still a spawner before spawning.
+                    if (loc.getBlock().getType() != Material.SPAWNER) return;
+                    org.bukkit.entity.Entity spawned = loc.getWorld().spawnEntity(
+                            jitterLocation(loc),
+                            type,
+                            org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.SPAWNER
+                    );
+                    // MobStackManager has now processed the spawn event and set
+                    // PDC = 1.  Override with the real batch count.
+                    if (spawned instanceof LivingEntity le && stackCount > 1) {
+                        le.getPersistentDataContainer()
+                                .set(MOB_STACK_KEY, PersistentDataType.INTEGER, stackCount);
+                        le.setCustomName("§e§l" + formatMobName(type) + " §f§lx§6§l" + stackCount);
+                        le.setCustomNameVisible(true);
+                    }
+                });
             }
         }, periodTicks, periodTicks);
 

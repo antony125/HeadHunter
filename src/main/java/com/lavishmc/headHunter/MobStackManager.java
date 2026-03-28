@@ -18,7 +18,9 @@ import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -63,6 +65,7 @@ public class MobStackManager implements Listener {
     // State
     // -------------------------------------------------------------------------
 
+    private final java.util.logging.Logger logger;
     private final NamespacedKey stackKey;
     private final NamespacedKey headCountKey;
     /** When false, only SPAWNER / SPAWNER_EGG / COMMAND spawns are permitted (unless whitelisted). */
@@ -83,6 +86,7 @@ public class MobStackManager implements Listener {
     // -------------------------------------------------------------------------
 
     public MobStackManager(JavaPlugin plugin) {
+        this.logger = plugin.getLogger();
         // Hardcode the "headhunter" namespace so the key is always
         // "headhunter:stack_size" regardless of the registered plugin name.
         //noinspection deprecation  — intentional fixed namespace
@@ -220,19 +224,43 @@ public class MobStackManager implements Listener {
 
         if (size <= 1) return;
 
-        // For each head item DropHeads added, consolidate the full stack count into
-        // a single item entity.  The visible amount is capped at 64 (the Minecraft
-        // item-stack limit) for display, but the real total is stored in PDC under
-        // headhunter:head_count so the pickup listener can distribute it correctly.
-        for (ItemStack drop : event.getDrops()) {
-            if (drop == null || !SKULL_MATERIALS.contains(drop.getType())) continue;
-            int total = size; // one head per mob in the stack
-            drop.setAmount(Math.min(total, 64));
-            ItemMeta meta = drop.getItemMeta();
-            if (meta != null) {
-                meta.getPersistentDataContainer()
-                    .set(headCountKey, PersistentDataType.INTEGER, total);
-                drop.setItemMeta(meta);
+        logger.info("[HH Stack] " + dead.getType() + " stack size=" + size);
+
+        // Snapshot the drop list so we can safely append overflow stacks while iterating.
+        List<ItemStack> originalDrops = new ArrayList<>(event.getDrops());
+
+        for (ItemStack drop : originalDrops) {
+            if (drop == null) continue;
+
+            if (SKULL_MATERIALS.contains(drop.getType())) {
+                // Head items: consolidate the full stack count into one item with the
+                // real total stored in PDC. Visible amount capped at 64 for display;
+                // the pickup listener reads headhunter:head_count to distribute correctly.
+                int total = size; // one head per mob in the stack
+                drop.setAmount(Math.min(total, 64));
+                ItemMeta meta = drop.getItemMeta();
+                if (meta != null) {
+                    meta.getPersistentDataContainer()
+                        .set(headCountKey, PersistentDataType.INTEGER, total);
+                    drop.setItemMeta(meta);
+                }
+            } else {
+                // Vanilla drops (beef, bones, XP bottles, etc.): multiply the existing
+                // amount by stack size, then split into 64-item stacks.
+                int originalAmount = drop.getAmount();
+                int total = originalAmount * size;
+                logger.info("[HH Stack]   vanilla drop=" + drop.getType()
+                        + " originalAmt=" + originalAmount
+                        + " x" + size + " = " + total
+                        + " (" + (int) Math.ceil(total / 64.0) + " stacks)");
+                drop.setAmount(Math.min(total, 64));
+                int remaining = total - 64;
+                while (remaining > 0) {
+                    ItemStack overflow = drop.clone();
+                    overflow.setAmount(Math.min(remaining, 64));
+                    event.getDrops().add(overflow);
+                    remaining -= 64;
+                }
             }
         }
     }

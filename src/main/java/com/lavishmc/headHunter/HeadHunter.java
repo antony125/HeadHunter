@@ -27,10 +27,19 @@ import java.util.stream.StreamSupport;
 public final class HeadHunter extends DropHeads {
 
     private static PlayerDataManager playerDataManager;
+    private SpawnerStackManager spawnerStackManager;
 
     /** Returns the shared {@link PlayerDataManager} instance (available after onEnable). */
     public static PlayerDataManager getPlayerDataManager() {
         return playerDataManager;
+    }
+
+    @Override
+    public void onEvDisable() {
+        if (spawnerStackManager != null) {
+            spawnerStackManager.shutdown();
+        }
+        super.onEvDisable();
     }
 
     @Override
@@ -60,7 +69,8 @@ public final class HeadHunter extends DropHeads {
         getServer().getPluginManager().registerEvents(new HeadLoreListener(this), this);
         getServer().getPluginManager().registerEvents(new HeadSellListener(this, economy, playerDataManager), this);
         getServer().getPluginManager().registerEvents(new SunlightProtectionListener(), this);
-        getServer().getPluginManager().registerEvents(new SpawnerStackManager(this, spawnRateConfig), this);
+        spawnerStackManager = new SpawnerStackManager(this, spawnRateConfig);
+        getServer().getPluginManager().registerEvents(spawnerStackManager, this);
 
         // Start the sidebar scoreboard (updates every second).
         new SidebarManager(this, playerDataManager, economy).start();

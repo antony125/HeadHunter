@@ -9,6 +9,7 @@ import org.bukkit.block.Block;
 import org.bukkit.block.CreatureSpawner;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.TextDisplay;
 import org.bukkit.event.EventHandler;
@@ -23,9 +24,12 @@ import org.bukkit.inventory.meta.BlockStateMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -53,6 +57,11 @@ public class SpawnerStackManager implements Listener {
     public static final NamespacedKey SPAWNER_STACK_KEY =
             new NamespacedKey("headhunter", "spawner_stack");
 
+    /** PDC key used by MobStackManager on living entities — fixed namespace. */
+    //noinspection deprecation
+    private static final NamespacedKey MOB_STACK_KEY =
+            new NamespacedKey("headhunter", "stack_size");
+
     private final JavaPlugin plugin;
     private final SpawnRateConfig spawnRateConfig;
     private final int maxStack;
@@ -61,6 +70,8 @@ public class SpawnerStackManager implements Listener {
     private final Map<String, BukkitTask> tasks = new HashMap<>();
     /** Location string → current stack count. */
     private final Map<String, Integer> stackCounts = new HashMap<>();
+    /** Location string → entity type (mirrors the block PDC; kept in sync for fast save). */
+    private final Map<String, EntityType> stackTypes = new HashMap<>();
     /** Location string → UUID of the floating TextDisplay label. */
     private final Map<String, UUID> labels = new HashMap<>();
 
@@ -68,6 +79,7 @@ public class SpawnerStackManager implements Listener {
         this.plugin = plugin;
         this.spawnRateConfig = spawnRateConfig;
         this.maxStack = plugin.getConfig().getInt("spawner-stack-max", 50);
+        load();
     }
 
     // -------------------------------------------------------------------------
@@ -113,6 +125,7 @@ public class SpawnerStackManager implements Listener {
 
         int newCount = current + 1;
         stackCounts.put(locKey, newCount);
+        stackTypes.put(locKey, placedType);
 
         // Update block tile-entity PDC to reflect new count.
         CreatureSpawner cs = (CreatureSpawner) clicked.getState();
@@ -121,6 +134,7 @@ public class SpawnerStackManager implements Listener {
 
         updateLabel(clicked.getLocation(), placedType, newCount);
         restartTask(clicked.getLocation(), placedType, newCount);
+        save();
 
         player.sendMessage(msg("&aMerged &e1 &aspawner. Stack is now &e" + newCount + "/" + maxStack + "&a."));
         event.setCancelled(true);
@@ -170,11 +184,14 @@ public class SpawnerStackManager implements Listener {
         BukkitTask stale = tasks.remove(locKey);
         if (stale != null) stale.cancel();
         stackCounts.remove(locKey);
+        stackTypes.remove(locKey);
         removeLabel(locKey);
 
         stackCounts.put(locKey, count);
+        stackTypes.put(locKey, type);
         updateLabel(placed.getLocation(), type, count);
         restartTask(placed.getLocation(), type, count);
+        save();
     }
 
     // -------------------------------------------------------------------------
@@ -193,6 +210,8 @@ public class SpawnerStackManager implements Listener {
         if (task != null) task.cancel();
         removeLabel(locKey);
         stackCounts.remove(locKey);
+        stackTypes.remove(locKey);
+        save();
 
         // Always suppress vanilla drops — we handle them ourselves (no silk touch required).
         event.setDropItems(false);
@@ -238,19 +257,192 @@ public class SpawnerStackManager implements Listener {
                 BukkitTask self = tasks.remove(locKey);
                 if (self != null) self.cancel();
                 stackCounts.remove(locKey);
+                stackTypes.remove(locKey);
                 removeLabel(locKey);
                 return;
             }
-            for (int i = 0; i < stackCount; i++) {
-                loc.getWorld().spawnEntity(
+            // Find an existing stack leader of this type in the spawner's chunk.
+            // This covers the post-restart case where stack entities survived but the
+            // in-memory MobStackManager map was cleared.
+            LivingEntity existingLeader = null;
+            for (org.bukkit.entity.Entity e : loc.getChunk().getEntities()) {
+                if (!(e instanceof LivingEntity le)) continue;
+                if (e.getType() != type || !le.isValid() || le.isDead()) continue;
+                if (!le.getPersistentDataContainer().has(MOB_STACK_KEY, PersistentDataType.INTEGER)) continue;
+                existingLeader = le;
+                break;
+            }
+            if (existingLeader != null) {
+                // Stack exists — grow it by stackCount without spawning new entities.
+                int current = existingLeader.getPersistentDataContainer()
+                        .getOrDefault(MOB_STACK_KEY, PersistentDataType.INTEGER, 1);
+                int next = Math.min(current + stackCount, 9999);
+                existingLeader.getPersistentDataContainer()
+                        .set(MOB_STACK_KEY, PersistentDataType.INTEGER, next);
+                existingLeader.setCustomName("§e§l" + formatMobName(type) + " §f§lx§6§l" + next);
+                existingLeader.setCustomNameVisible(true);
+            } else {
+                // No stack yet — spawn 1 entity and seed its PDC with the full
+                // stackCount so it immediately represents the whole spawner's batch.
+                org.bukkit.entity.Entity spawned = loc.getWorld().spawnEntity(
                         jitterLocation(loc),
                         type,
                         org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.SPAWNER
                 );
+                if (spawned instanceof LivingEntity le && stackCount > 1) {
+                    le.getPersistentDataContainer()
+                            .set(MOB_STACK_KEY, PersistentDataType.INTEGER, stackCount);
+                    le.setCustomName("§e§l" + formatMobName(type) + " §f§lx§6§l" + stackCount);
+                    le.setCustomNameVisible(true);
+                }
             }
         }, periodTicks, periodTicks);
 
         tasks.put(locKey, task);
+    }
+
+    // -------------------------------------------------------------------------
+    // Shutdown
+    // -------------------------------------------------------------------------
+
+    /**
+     * Cancels all spawner tasks, removes all floating labels, and despawns every
+     * living entity in loaded chunks that carries {@code headhunter:stack_size}.
+     * Called from {@link HeadHunter#onEvDisable()}.
+     */
+    public void shutdown() {
+        // Persist current state before tearing down.
+        save();
+
+        // Cancel all running spawner tasks.
+        for (BukkitTask t : tasks.values()) t.cancel();
+        tasks.clear();
+        stackCounts.clear();
+        stackTypes.clear();
+
+        // Remove all floating text labels.
+        for (String locKey : new ArrayList<>(labels.keySet())) {
+            removeLabel(locKey);
+        }
+
+        // Despawn every living entity in loaded chunks with headhunter:stack_size.
+        for (World world : plugin.getServer().getWorlds()) {
+            for (org.bukkit.Chunk chunk : world.getLoadedChunks()) {
+                for (org.bukkit.entity.Entity entity : chunk.getEntities()) {
+                    if (entity instanceof LivingEntity le
+                            && le.getPersistentDataContainer()
+                                  .has(MOB_STACK_KEY, PersistentDataType.INTEGER)) {
+                        le.remove();
+                    }
+                }
+            }
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Persistence
+    // -------------------------------------------------------------------------
+
+    /** Writes all active stacked spawners to {@code spawners.yml} in the plugin data folder. */
+    private void save() {
+        File file = new File(plugin.getDataFolder(), "spawners.yml");
+        YamlConfiguration config = new YamlConfiguration();
+
+        int idx = 0;
+        for (Map.Entry<String, Integer> entry : stackCounts.entrySet()) {
+            String locKey = entry.getKey();
+            int count = entry.getValue();
+            EntityType type = stackTypes.get(locKey);
+            if (type == null) continue;
+
+            // locKey format: "world,x,y,z"
+            String[] parts = locKey.split(",", 4);
+            if (parts.length != 4) continue;
+
+            String base = "spawners." + idx;
+            config.set(base + ".world", parts[0]);
+            config.set(base + ".x",     Integer.parseInt(parts[1]));
+            config.set(base + ".y",     Integer.parseInt(parts[2]));
+            config.set(base + ".z",     Integer.parseInt(parts[3]));
+            config.set(base + ".type",  type.name());
+            config.set(base + ".count", count);
+            idx++;
+        }
+
+        try {
+            plugin.getDataFolder().mkdirs();
+            config.save(file);
+        } catch (IOException e) {
+            plugin.getLogger().warning("Failed to save spawners.yml: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Reads {@code spawners.yml} and re-registers all saved spawners.
+     * Called from the constructor; worlds are loaded before plugins enable on a
+     * normal server start so block lookups are safe here.
+     */
+    private void load() {
+        File file = new File(plugin.getDataFolder(), "spawners.yml");
+        if (!file.exists()) return;
+
+        YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
+        ConfigurationSection spawners = config.getConfigurationSection("spawners");
+        if (spawners == null) return;
+
+        // Collect valid entries first — purely in-memory work that is safe to do
+        // before the first server tick (no entity spawning here).
+        record Entry(Location loc, EntityType type, int count) {}
+        List<Entry> valid = new ArrayList<>();
+
+        for (String key : spawners.getKeys(false)) {
+            ConfigurationSection sec = spawners.getConfigurationSection(key);
+            if (sec == null) continue;
+
+            String worldName = sec.getString("world");
+            String typeStr   = sec.getString("type");
+            int x     = sec.getInt("x");
+            int y     = sec.getInt("y");
+            int z     = sec.getInt("z");
+            int count = sec.getInt("count", 1);
+
+            if (worldName == null || typeStr == null || count <= 1) continue;
+
+            World world = plugin.getServer().getWorld(worldName);
+            if (world == null) {
+                plugin.getLogger().warning("spawners.yml: world '" + worldName + "' not loaded, skipping entry " + key);
+                continue;
+            }
+
+            EntityType type;
+            try { type = EntityType.valueOf(typeStr); }
+            catch (IllegalArgumentException e) {
+                plugin.getLogger().warning("spawners.yml: unknown entity type '" + typeStr + "', skipping entry " + key);
+                continue;
+            }
+
+            Location loc = new Location(world, x, y, z);
+            if (loc.getBlock().getType() != Material.SPAWNER) continue; // block was broken since last save
+
+            // Register in maps immediately so the data is available to any code
+            // that runs before the deferred tick fires.
+            String locKey = locKey(loc);
+            stackCounts.put(locKey, count);
+            stackTypes.put(locKey, type);
+            valid.add(new Entry(loc, type, count));
+        }
+
+        if (valid.isEmpty()) return;
+
+        // Defer TextDisplay spawning and task registration by 1 tick so the world
+        // is fully ticked and ready to accept new entities.
+        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+            for (Entry e : valid) {
+                updateLabel(e.loc(), e.type(), e.count());
+                restartTask(e.loc(), e.type(), e.count());
+            }
+            plugin.getLogger().info("Restored " + valid.size() + " stacked spawner(s) from spawners.yml.");
+        }, 1L);
     }
 
     // -------------------------------------------------------------------------

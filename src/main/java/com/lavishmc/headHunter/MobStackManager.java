@@ -180,6 +180,26 @@ public class MobStackManager implements Listener {
             }
         }
 
+        // Scan the chunk for a surviving stack leader — handles the post-restart
+        // case where entities with headhunter:stack_size PDC persisted but the
+        // in-memory stacks map was reset.
+        for (Entity candidate : spawned.getChunk().getEntities()) {
+            if (!(candidate instanceof LivingEntity le)) continue;
+            if (candidate.getType() != type || !le.isValid() || le.isDead()) continue;
+            if (candidate.equals(spawned)) continue;
+            if (!le.getPersistentDataContainer().has(stackKey, PersistentDataType.INTEGER)) continue;
+            // Found a persistent leader — register it and merge the new spawn into it.
+            stacks.computeIfAbsent(key, k -> new HashMap<>()).put(type, le.getUniqueId());
+            int current = getStackSize(le);
+            if (current < MAX_STACK) {
+                event.setCancelled(true);
+                int next = current + 1;
+                setStackSize(le, next);
+                applyName(le, type, next);
+            }
+            return;
+        }
+
         // Register this entity as the stack leader for its type in this chunk.
         stacks.computeIfAbsent(key, k -> new HashMap<>())
               .put(type, spawned.getUniqueId());

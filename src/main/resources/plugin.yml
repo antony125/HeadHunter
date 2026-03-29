@@ -14,13 +14,6 @@ softdepend: [HeadDatabase, Essentials, VanishNoPacket, Vault]
 # use-legacy-head-textures,use-1.19.2-vex-head-textures,use-1.20.2-bat-head-textures
 
 commands:
-  spawnhead:
-    description: Get a player or mob head
-    usage: /gethead [giveto] [target] [amount]
-    aliases: [gethead,givehead,getskull,giveskull,dhspawn,phspawn,head,skull]
-    permission: dropheads.spawn
-    permission-message: You do not have permission to do this.
-
   droprate:
     description: Check the drop rate for a head
     usage: /droprate <mob> [new value] [update file]
@@ -51,6 +44,13 @@ commands:
     usage: /givespawner <player> <mobtype> [amount]
     permission: headhunter.admin
     permission-message: You do not have permission to use this command.
+
+  givebanknote:
+    description: Give a bank note of the specified tier to a player
+    usage: /givebanknote <player> <tier> [amount]
+    permission: headhunter.admin
+    permission-message: You do not have permission to use this command.
+    default: op
 
   hh:
     description: HeadHunter admin commands

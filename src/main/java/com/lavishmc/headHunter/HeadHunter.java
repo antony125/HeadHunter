@@ -110,6 +110,11 @@ public final class HeadHunter extends DropHeads {
         Objects.requireNonNull(getCommand("givespawner")).setExecutor(giveSpawner);
         Objects.requireNonNull(getCommand("givespawner")).setTabCompleter(giveSpawner);
 
+        // /givebanknote — give a bank note of the specified tier to a player.
+        GiveBankNoteCommand giveBankNote = new GiveBankNoteCommand(this);
+        Objects.requireNonNull(getCommand("givebanknote")).setExecutor(giveBankNote);
+        Objects.requireNonNull(getCommand("givebanknote")).setTabCompleter(giveBankNote);
+
         // /hh — admin command suite.
         HHAdminCommand hhAdmin = new HHAdminCommand(this, playerDataManager, economy, spawnRateConfig);
         Objects.requireNonNull(getCommand("hh")).setExecutor(hhAdmin);

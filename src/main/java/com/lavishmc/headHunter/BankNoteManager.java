@@ -1,7 +1,8 @@
 package com.lavishmc.headHunter;
 
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.inventory.ItemStack;
@@ -22,26 +23,40 @@ public class BankNoteManager {
     /**
      * Creates a Bank Note item for the given tier.
      * <ul>
-     *   <li>Display name: {@code &6Bank Note &e[Tier {tier}]}</li>
-     *   <li>Lore: {@code &7Redeem for &e${value}}</li>
+     *   <li>Display name: {@code §6§lBank Note §e§l[Tier {tier}]} — non-italic</li>
+     *   <li>Lore: {@code §fRedeem for §a§l${value}} — non-italic, value bold</li>
      *   <li>PDC: {@code headhunter:banknote_tier = tier}</li>
      * </ul>
      */
     public static ItemStack createBankNote(JavaPlugin plugin, int tier) {
         int value = plugin.getConfig().getInt("bank-note-values." + tier, 0);
 
+        // §6§lBank Note §e§l[Tier 5]  — all non-italic
+        Component displayName = Component.empty()
+                .decoration(TextDecoration.ITALIC, false)
+                .append(Component.text("Bank Note ")
+                        .color(NamedTextColor.GOLD)
+                        .decoration(TextDecoration.BOLD, true))
+                .append(Component.text("[Tier " + tier + "]")
+                        .color(NamedTextColor.YELLOW)
+                        .decoration(TextDecoration.BOLD, true));
+
+        // §fRedeem for §a§l$3000  — non-italic, value bold green
+        Component lore = Component.empty()
+                .decoration(TextDecoration.ITALIC, false)
+                .append(Component.text("Redeem for ")
+                        .color(NamedTextColor.WHITE))
+                .append(Component.text("$" + value)
+                        .color(NamedTextColor.GREEN)
+                        .decoration(TextDecoration.BOLD, true));
+
         ItemStack item = new ItemStack(Material.PAPER);
         ItemMeta meta = item.getItemMeta();
-
-        meta.displayName(legacy("&6Bank Note &e[Tier " + tier + "]"));
-        meta.lore(List.of(legacy("&7Redeem for &e$" + value)));
+        meta.displayName(displayName);
+        meta.lore(List.of(lore));
         meta.getPersistentDataContainer().set(BANKNOTE_TIER_KEY, PersistentDataType.INTEGER, tier);
 
         item.setItemMeta(meta);
         return item;
-    }
-
-    private static Component legacy(String text) {
-        return LegacyComponentSerializer.legacyAmpersand().deserialize(text);
     }
 }

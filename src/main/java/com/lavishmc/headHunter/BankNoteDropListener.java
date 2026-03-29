@@ -1,6 +1,7 @@
 package com.lavishmc.headHunter;
 
 import com.lavishmc.headHunter.DropHeads.events.EntityBeheadEvent;
+import io.papermc.paper.event.entity.EntityRemoveEvent;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.EventHandler;
@@ -46,6 +47,12 @@ public class BankNoteDropListener implements Listener {
 
         event.setCancelled(true);
         pendingBankNoteDrops.add(event.getVictim().getUniqueId());
+    }
+
+    /** Clean up any pending entry when an entity is removed without dying (despawn, chunk unload, etc.). */
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onEntityRemove(EntityRemoveEvent event) {
+        pendingBankNoteDrops.remove(event.getEntity().getUniqueId());
     }
 
     /** Add bank notes to the drop list, scaled by the mob's stack size. */

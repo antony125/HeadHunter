@@ -232,7 +232,7 @@ public class HHAdminCommand implements CommandExecutor, TabCompleter {
         if (level >= PlayerDataManager.MAX_LEVEL) {
             costStr = "MAX LEVEL";
         } else {
-            costStr = "$" + getRankupCost(level);
+            costStr = "$" + playerData.getRankupCost(level);
         }
 
         sender.sendMessage(msg("&e--- " + target.getName() + " ---"));
@@ -359,20 +359,6 @@ public class HHAdminCommand implements CommandExecutor, TabCompleter {
             }
         }
         return sb.toString().trim();
-    }
-
-    /** Returns the {@code cost_to_rankup} for whichever mob entry has {@code level == level}. Falls back to 500. */
-    private long getRankupCost(int level) {
-        ConfigurationSection mobs = plugin.getConfig().getConfigurationSection("mobs");
-        if (mobs != null) {
-            for (String key : mobs.getKeys(false)) {
-                ConfigurationSection mob = mobs.getConfigurationSection(key);
-                if (mob != null && mob.getInt("level", 0) == level) {
-                    return mob.getLong("cost_to_rankup", 500L);
-                }
-            }
-        }
-        return 500L;
     }
 
     private static Component msg(String legacy) {

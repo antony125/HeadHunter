@@ -160,6 +160,10 @@ permissions:
     description: Permission to reconfigured rates with /droprate
     default: op
 
+  headhunter.basic:
+    description: Permission to use HeadHunter player features
+    default: true
+
   headhunter.admin:
     description: Permission to use HeadHunter admin commands (e.g. /testlevelup)
     default: op

@@ -9,7 +9,6 @@ import org.bukkit.Particle;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
-import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -70,10 +69,7 @@ public class RankUpCommand implements CommandExecutor {
         }
 
         // ── Money gate ───────────────────────────────────────────────────────
-        long rankupCost = getRankupCost(currentLevel);
-        plugin.getLogger().info("[HH] /rankup money check: economy=" + (economy != null)
-                + " balance=" + (economy != null ? economy.getBalance(player) : "N/A")
-                + " cost=" + rankupCost);
+        long rankupCost = playerData.getRankupCost(currentLevel);
         if (economy != null && economy.getBalance(player) < rankupCost) {
             long difference = rankupCost - (long) economy.getBalance(player);
             player.sendMessage(msg("&c&l[!] &fYou need &e$" + difference + " &fmore to rankup to &eLevel " + nextLevel + "&f!"));
@@ -207,20 +203,6 @@ public class RankUpCommand implements CommandExecutor {
         int level = playerData.getLevel(player.getUniqueId());
         int tier  = playerData.getTier(player.getUniqueId());
         playRankUpEffects(player, level, tier - 1, tier);
-    }
-
-    /** Returns the {@code cost_to_rankup} for whichever mob entry has {@code level == level}. Falls back to 500. */
-    private long getRankupCost(int level) {
-        ConfigurationSection mobs = plugin.getConfig().getConfigurationSection("mobs");
-        if (mobs != null) {
-            for (String key : mobs.getKeys(false)) {
-                ConfigurationSection mob = mobs.getConfigurationSection(key);
-                if (mob != null && mob.getInt("level", 0) == level) {
-                    return mob.getLong("cost_to_rankup", 500L);
-                }
-            }
-        }
-        return 500L;
     }
 
     private static Component msg(String legacy) {

@@ -309,9 +309,11 @@ public class HeadSellListener implements Listener {
             ConfigurationSection mobsSection = plugin.getConfig().getConfigurationSection("mobs");
             if (mobsSection != null) {
                 List<String> sortedKeys = new ArrayList<>(mobsSection.getKeys(false));
-                sortedKeys.sort((a, b) -> formatMobName(b).length() - formatMobName(a).length());
+                HashMap<String, String> formattedNames = new HashMap<>();
+                for (String key : sortedKeys) formattedNames.put(key, formatMobName(key));
+                sortedKeys.sort((a, b) -> formattedNames.get(b).length() - formattedNames.get(a).length());
                 for (String mobKey : sortedKeys) {
-                    if (displayName.contains(formatMobName(mobKey))) {
+                    if (displayName.contains(formattedNames.get(mobKey))) {
                         return mobKey;
                     }
                 }

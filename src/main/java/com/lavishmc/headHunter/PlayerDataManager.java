@@ -108,6 +108,25 @@ public class PlayerDataManager {
     }
 
     /**
+     * Returns the {@code cost_to_rankup} for whichever mob entry has {@code level == level}.
+     * Falls back to 500 if no matching entry is found.
+     */
+    public long getRankupCost(int level) {
+        org.bukkit.configuration.ConfigurationSection mobs =
+                plugin.getConfig().getConfigurationSection("mobs");
+        if (mobs != null) {
+            for (String key : mobs.getKeys(false)) {
+                org.bukkit.configuration.ConfigurationSection mob =
+                        mobs.getConfigurationSection(key);
+                if (mob != null && mob.getInt("level", 0) == level) {
+                    return mob.getLong("cost_to_rankup", 500L);
+                }
+            }
+        }
+        return 500L;
+    }
+
+    /**
      * XP span of level {@code n} — i.e. how much XP is needed to advance from
      * level {@code n} to level {@code n+1}.
      */

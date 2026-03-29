@@ -5,9 +5,7 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.milkbowl.vault.economy.Economy;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
-import org.bukkit.OfflinePlayer;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -83,21 +81,6 @@ public class HeadSellListener implements Listener {
                 if (tier != null) {
                     event.setCancelled(true);
                     redeemBankNote(player, item, tier);
-                    return;
-                }
-            }
-        }
-
-        // ── Player head selling ──────────────────────────────────────────────
-        if (item.getType() == Material.PLAYER_HEAD) {
-            ItemMeta headMeta = item.getItemMeta();
-            if (headMeta != null) {
-                String ownerStr = headMeta.getPersistentDataContainer()
-                        .get(PlayerHeadListener.HEAD_OWNER_KEY, PersistentDataType.STRING);
-                if (ownerStr != null) {
-                    if (event.getAction() != Action.RIGHT_CLICK_AIR) return;
-                    if (event.getClickedBlock() != null) return;
-                    handlePlayerHeadSell(event, player, item, ownerStr);
                     return;
                 }
             }
@@ -296,71 +279,6 @@ public class HeadSellListener implements Listener {
                 activeBossBars.remove(uuid);
             }
         }, 60L);
-    }
-
-    // -------------------------------------------------------------------------
-    // Player head sell
-    // -------------------------------------------------------------------------
-
-    private void handlePlayerHeadSell(PlayerInteractEvent event, Player seller, ItemStack item, String ownerStr) {
-        // If BountySystem (or another HIGH-priority listener) already claimed this
-        // head, skip — don't do the 25% steal.
-        if (event.isCancelled()) return;
-
-        // Consume the interaction so vanilla and other plugins don't also fire.
-        event.setCancelled(true);
-
-        UUID ownerUUID;
-        try {
-            ownerUUID = UUID.fromString(ownerStr);
-        } catch (IllegalArgumentException e) {
-            plugin.getLogger().warning("HeadSellListener: malformed UUID in player head PDC: " + ownerStr);
-            return;
-        }
-
-        // Prevent selling your own head.
-        if (ownerUUID.equals(seller.getUniqueId())) {
-            seller.sendMessage(msg("&cYou cannot sell your own head!"));
-            return;
-        }
-
-        if (economy == null) {
-            seller.sendMessage(msg("&cEconomy is unavailable."));
-            return;
-        }
-
-        // Read the encoded payout amount.
-        ItemMeta meta = item.getItemMeta();
-        long payout = 0;
-        if (meta != null) {
-            Long stored = meta.getPersistentDataContainer()
-                    .get(PlayerHeadListener.HEAD_BALANCE_KEY, PersistentDataType.LONG);
-            if (stored != null) payout = stored;
-        }
-
-        OfflinePlayer victim = Bukkit.getOfflinePlayer(ownerUUID);
-        String victimName = victim.getName() != null ? victim.getName() : ownerUUID.toString();
-
-        // Cap withdrawal so the victim cannot go negative.
-        double victimBalance = economy.getBalance(victim);
-        long actualWithdraw = (long) Math.min(payout, Math.floor(victimBalance));
-        if (actualWithdraw > 0) economy.withdrawPlayer(victim, (double) actualWithdraw);
-
-        if (actualWithdraw > 0) economy.depositPlayer(seller, (double) actualWithdraw);
-
-        // Remove one head from hand.
-        if (item.getAmount() > 1) {
-            item.setAmount(item.getAmount() - 1);
-        } else {
-            seller.getInventory().setItemInMainHand(null);
-        }
-
-        seller.sendMessage(msg("&aYou sold &e" + victimName + "'s &ahead for &e$" + actualWithdraw + "&a!"));
-
-        Player onlineVictim = Bukkit.getPlayer(ownerUUID);
-        if (onlineVictim != null) {
-            onlineVictim.sendMessage(msg("&cYour head was sold! You lost &e$" + actualWithdraw + "&c!"));
-        }
     }
 
     // -------------------------------------------------------------------------

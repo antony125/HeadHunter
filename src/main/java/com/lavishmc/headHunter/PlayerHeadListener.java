@@ -20,10 +20,14 @@ import org.bukkit.entity.TextDisplay;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.block.Block;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
@@ -227,6 +231,84 @@ public class PlayerHeadListener implements Listener {
         item.setItemMeta(meta);
 
         event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), item);
+    }
+
+    // -------------------------------------------------------------------------
+    // Player head sell
+    // -------------------------------------------------------------------------
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = false)
+    public void onPlayerHeadRightClick(PlayerInteractEvent event) {
+        if (event.getHand() != EquipmentSlot.HAND) return;
+        if (event.getAction() != Action.RIGHT_CLICK_AIR
+                && event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
+
+        Player player = event.getPlayer();
+        ItemStack item = player.getInventory().getItemInMainHand();
+        if (item == null || item.getType() != Material.PLAYER_HEAD) return;
+
+        ItemMeta meta = item.getItemMeta();
+        if (meta == null) return;
+        String ownerStr = meta.getPersistentDataContainer()
+                .get(HEAD_OWNER_KEY, PersistentDataType.STRING);
+        if (ownerStr == null) return;
+
+        // Use getTargetBlock to authoritatively determine if player is
+        // looking at a solid block. If yes, let vanilla place the head.
+        // If no solid block in range, sell the head.
+        Block target = player.getTargetBlock(null, 5);
+        if (target != null && target.getType() != Material.AIR) return;
+
+        event.setCancelled(true);
+        handlePlayerHeadSell(player, item, ownerStr);
+    }
+
+    private void handlePlayerHeadSell(Player seller, ItemStack item, String ownerStr) {
+        UUID ownerUUID;
+        try {
+            ownerUUID = UUID.fromString(ownerStr);
+        } catch (IllegalArgumentException e) {
+            return;
+        }
+
+        if (ownerUUID.equals(seller.getUniqueId())) {
+            seller.sendMessage(msg("&cYou cannot sell your own head!"));
+            return;
+        }
+
+        if (economy == null) {
+            seller.sendMessage(msg("&cEconomy is unavailable."));
+            return;
+        }
+
+        ItemMeta meta = item.getItemMeta();
+        long payout = 0;
+        if (meta != null) {
+            Long stored = meta.getPersistentDataContainer()
+                    .get(HEAD_BALANCE_KEY, PersistentDataType.LONG);
+            if (stored != null) payout = stored;
+        }
+
+        OfflinePlayer victim = Bukkit.getOfflinePlayer(ownerUUID);
+        String victimName = victim.getName() != null ? victim.getName() : ownerUUID.toString();
+
+        double victimBalance = economy.getBalance(victim);
+        long actualWithdraw = (long) Math.min(payout, Math.floor(victimBalance));
+        if (actualWithdraw > 0) economy.withdrawPlayer(victim, (double) actualWithdraw);
+        if (actualWithdraw > 0) economy.depositPlayer(seller, (double) actualWithdraw);
+
+        if (item.getAmount() > 1) {
+            item.setAmount(item.getAmount() - 1);
+        } else {
+            seller.getInventory().setItemInMainHand(null);
+        }
+
+        seller.sendMessage(msg("&aYou sold &e" + victimName + "'s &ahead for &e$" + actualWithdraw + "&a!"));
+
+        Player onlineVictim = Bukkit.getPlayer(ownerUUID);
+        if (onlineVictim != null) {
+            onlineVictim.sendMessage(msg("&cYour head was sold! You lost &e$" + actualWithdraw + "&c!"));
+        }
     }
 
     // -------------------------------------------------------------------------

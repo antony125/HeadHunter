@@ -441,15 +441,25 @@ public class SpawnerStackManager implements Listener {
 
         if (valid.isEmpty()) return;
 
-        // Defer TextDisplay spawning and task registration by 1 tick so the world
-        // is fully ticked and ready to accept new entities.
+        // Defer TextDisplay spawning and task registration by 40 ticks (2 s) so the
+        // world is fully loaded before spawning entities.
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
             for (Entry e : valid) {
+                // Remove any persisted TextDisplay entities left over from a previous
+                // session near this spawner to prevent duplicate labels stacking up.
+                Location labelLoc = e.loc().clone().add(0.5, 1.5, 0.5);
+                for (org.bukkit.entity.Entity nearby : e.loc().getWorld()
+                        .getNearbyEntities(labelLoc, 0.5, 0.5, 0.5)) {
+                    if (nearby instanceof TextDisplay) {
+                        plugin.getLogger().info("[SpawnerStack] Removing stale TextDisplay " + nearby.getUniqueId() + " at " + locKey(e.loc()));
+                        nearby.remove();
+                    }
+                }
                 updateLabel(e.loc(), e.type(), e.count());
                 restartTask(e.loc(), e.type(), e.count());
             }
             plugin.getLogger().info("Restored " + valid.size() + " stacked spawner(s) from spawners.yml.");
-        }, 1L);
+        }, 40L);
     }
 
     // -------------------------------------------------------------------------
@@ -458,8 +468,12 @@ public class SpawnerStackManager implements Listener {
 
     private void updateLabel(Location loc, EntityType type, int count) {
         String locKey = locKey(loc);
+        plugin.getLogger().info("[SpawnerStack] updateLabel called — loc=" + locKey + " type=" + type + " count=" + count);
         removeLabel(locKey);
-        if (count <= 1) return;
+        if (count <= 1) {
+            plugin.getLogger().info("[SpawnerStack] updateLabel skipped (count <= 1) for " + locKey);
+            return;
+        }
 
         String text = "§e§l" + formatMobName(type) + " Spawner §6§lx" + count;
         Component component = LegacyComponentSerializer.legacySection().deserialize(text);
@@ -468,17 +482,23 @@ public class SpawnerStackManager implements Listener {
         TextDisplay display = (TextDisplay) loc.getWorld().spawnEntity(labelLoc, EntityType.TEXT_DISPLAY);
         display.text(component);
         display.setBillboard(org.bukkit.entity.Display.Billboard.CENTER);
-        display.setPersistent(false);
+        display.setPersistent(true);
         labels.put(locKey, display.getUniqueId());
+        plugin.getLogger().info("[SpawnerStack] TextDisplay spawned — uuid=" + display.getUniqueId() + " at " + labelLoc.getWorld().getName() + " " + labelLoc.getBlockX() + "," + labelLoc.getBlockY() + "," + labelLoc.getBlockZ());
     }
 
     private void removeLabel(String locKey) {
         UUID uid = labels.remove(locKey);
-        if (uid == null) return;
+        if (uid == null) {
+            plugin.getLogger().info("[SpawnerStack] removeLabel called for " + locKey + " — no label registered, nothing to remove");
+            return;
+        }
+        plugin.getLogger().info("[SpawnerStack] removeLabel removing uuid=" + uid + " for " + locKey);
         for (World world : plugin.getServer().getWorlds()) {
             org.bukkit.entity.Entity e = world.getEntity(uid);
             if (e != null) { e.remove(); return; }
         }
+        plugin.getLogger().info("[SpawnerStack] removeLabel uuid=" + uid + " not found in any world (already gone)");
     }
 
     // -------------------------------------------------------------------------

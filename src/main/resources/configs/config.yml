@@ -734,3 +734,16 @@ bank-note-values:
   3: 400
   4: 900
   5: 2000
+
+# ============================================================
+# Player head drop and economy restriction settings
+# ============================================================
+player-heads:
+  # Whether player heads drop on death at all
+  enabled: true
+  # Percentage of dead player's balance stored on the head as payout (default 25%)
+  balance-percent: 25
+  # Seconds after death during which economy commands are blocked
+  death-restriction-seconds: 60
+  # If true, only drop a head when killed by another player; false = always drop
+  drop-on-pvp-only: false

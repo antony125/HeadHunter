@@ -64,6 +64,7 @@ public final class HeadHunter extends DropHeads {
         SpawnRateConfig spawnRateConfig = new SpawnRateConfig(this);
 
         // Register HeadHunter-specific systems.
+        getServer().getPluginManager().registerEvents(new PlayerHeadListener(this, economy), this);
         getServer().getPluginManager().registerEvents(new MobStackManager(this), this);
         getServer().getPluginManager().registerEvents(new BankNoteDropListener(this), this);
         getServer().getPluginManager().registerEvents(new HeadLoreListener(this), this);

@@ -95,12 +95,10 @@ public class HeadSellListener implements Listener {
                 String ownerStr = headMeta.getPersistentDataContainer()
                         .get(PlayerHeadListener.HEAD_OWNER_KEY, PersistentDataType.STRING);
                 if (ownerStr != null) {
-                    // RIGHT_CLICK_BLOCK: explicitly un-cancel (in case a higher-priority
-                    // listener like BountySystem cancelled it) so vanilla placement fires.
                     if (event.getAction() == Action.RIGHT_CLICK_BLOCK) {
-                        event.setCancelled(false);
-                        return;
+                        return; // let vanilla place the head
                     }
+                    // Only reach here on RIGHT_CLICK_AIR
                     handlePlayerHeadSell(event, player, item, ownerStr);
                     return;
                 }

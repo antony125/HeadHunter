@@ -1,13 +1,13 @@
 package com.lavishmc.headHunter;
 
 import com.lavishmc.headHunter.DropHeads.events.EntityBeheadEvent;
-import io.papermc.paper.event.entity.EntityRemoveEvent;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -49,12 +49,6 @@ public class BankNoteDropListener implements Listener {
         pendingBankNoteDrops.add(event.getVictim().getUniqueId());
     }
 
-    /** Clean up any pending entry when an entity is removed without dying (despawn, chunk unload, etc.). */
-    @EventHandler(priority = EventPriority.MONITOR)
-    public void onEntityRemove(EntityRemoveEvent event) {
-        pendingBankNoteDrops.remove(event.getEntity().getUniqueId());
-    }
-
     /** Add bank notes to the drop list, scaled by the mob's stack size. */
     @EventHandler(priority = EventPriority.MONITOR)
     public void onEntityDeath(EntityDeathEvent event) {
@@ -73,6 +67,14 @@ public class BankNoteDropListener implements Listener {
             note.setAmount(amount);
             event.getDrops().add(note);
             remaining -= amount;
+        }
+    }
+
+    /** Cleans up pending entries for any entities being unloaded with the chunk. */
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onChunkUnload(ChunkUnloadEvent event) {
+        for (org.bukkit.entity.Entity entity : event.getChunk().getEntities()) {
+            pendingBankNoteDrops.remove(entity.getUniqueId());
         }
     }
 }

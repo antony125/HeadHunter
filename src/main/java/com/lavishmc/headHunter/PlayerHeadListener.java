@@ -1,24 +1,40 @@
 package com.lavishmc.headHunter;
 
+import com.destroystokyo.paper.profile.PlayerProfile;
+import com.destroystokyo.paper.profile.ProfileProperty;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.milkbowl.vault.economy.Economy;
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.OfflinePlayer;
+import org.bukkit.World;
+import org.bukkit.entity.Display;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.TextDisplay;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public class PlayerHeadListener implements Listener {
@@ -43,9 +59,32 @@ public class PlayerHeadListener implements Listener {
     /** Maps player UUID → death timestamp (ms). Cleared when restriction expires. */
     private final HashMap<UUID, Long> deathRestrictions = new HashMap<>();
 
+    /** Maps locKey → owner UUID for placed trophy heads. */
+    private final Map<String, UUID> placedHeads = new HashMap<>();
+    /** Maps locKey → balance snapshot for placed trophy heads. */
+    private final Map<String, Long> placedHeadBalances = new HashMap<>();
+    /** Maps locKey → TextDisplay UUID for placed trophy head labels. */
+    private final Map<String, UUID> placedHeadLabels = new HashMap<>();
+
     public PlayerHeadListener(JavaPlugin plugin, Economy economy) {
         this.plugin = plugin;
         this.economy = economy;
+
+        // Every 5 seconds: refresh trophy head labels with live bounty data and
+        // clean up any entries whose block was removed without a break event.
+        plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
+            for (String locKey : new ArrayList<>(placedHeads.keySet())) {
+                Location loc = locFromKey(locKey);
+                if (loc == null || !isPlayerHead(loc.getBlock().getType())) {
+                    removePlacedHeadLabel(locKey);
+                    placedHeads.remove(locKey);
+                    placedHeadBalances.remove(locKey);
+                    continue;
+                }
+                updatePlacedHeadLabel(locKey, placedHeads.get(locKey),
+                        placedHeadBalances.getOrDefault(locKey, 0L));
+            }
+        }, 100L, 100L);
     }
 
     // -------------------------------------------------------------------------
@@ -72,10 +111,10 @@ public class PlayerHeadListener implements Listener {
 
         // Build the head item.
         ItemStack item = new ItemStack(Material.PLAYER_HEAD);
-        @SuppressWarnings("deprecation") // setOwningPlayer is still the simplest API for this
         SkullMeta meta = (SkullMeta) item.getItemMeta();
 
-        meta.setOwningPlayer(deadPlayer);
+        PlayerProfile profile = (PlayerProfile) deadPlayer.getPlayerProfile();
+        meta.setPlayerProfile(profile);
 
         Component displayName = Component.empty()
                 .decoration(TextDecoration.ITALIC, false)
@@ -100,6 +139,111 @@ public class PlayerHeadListener implements Listener {
         item.setItemMeta(meta);
 
         deadPlayer.getWorld().dropItemNaturally(deadPlayer.getLocation(), item);
+
+        // Remove any untagged PLAYER_HEAD drops added by DropHeads or vanilla
+        // so only our PDC-tagged head remains in the world.
+        event.getDrops().removeIf(drop ->
+                drop.getType() == Material.PLAYER_HEAD
+                && (drop.getItemMeta() == null
+                    || !drop.getItemMeta().getPersistentDataContainer()
+                            .has(HEAD_OWNER_KEY, PersistentDataType.STRING)));
+    }
+
+    // -------------------------------------------------------------------------
+    // Trophy head — place
+    // -------------------------------------------------------------------------
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onBlockPlace(BlockPlaceEvent event) {
+        ItemStack item = event.getItemInHand();
+        if (item.getType() != Material.PLAYER_HEAD) return;
+
+        ItemMeta rawMeta = item.getItemMeta();
+        if (rawMeta == null) return;
+
+        String ownerStr = rawMeta.getPersistentDataContainer()
+                .get(HEAD_OWNER_KEY, PersistentDataType.STRING);
+        if (ownerStr == null) return;
+
+        UUID ownerUUID;
+        try {
+            ownerUUID = UUID.fromString(ownerStr);
+        } catch (IllegalArgumentException e) {
+            return;
+        }
+
+        Long stored = rawMeta.getPersistentDataContainer()
+                .get(HEAD_BALANCE_KEY, PersistentDataType.LONG);
+        long balanceSnapshot = stored != null ? stored : 0L;
+
+        Location loc = event.getBlockPlaced().getLocation();
+        String locKey = locKey(loc);
+
+        placedHeads.put(locKey, ownerUUID);
+        placedHeadBalances.put(locKey, balanceSnapshot);
+
+        Location labelLoc = loc.clone().add(0.5, 1.4, 0.5);
+        TextDisplay display = (TextDisplay) loc.getWorld()
+                .spawnEntity(labelLoc, EntityType.TEXT_DISPLAY);
+        display.setBillboard(Display.Billboard.CENTER);
+        display.setPersistent(false);
+        placedHeadLabels.put(locKey, display.getUniqueId());
+
+        updatePlacedHeadLabel(locKey, ownerUUID, balanceSnapshot);
+    }
+
+    // -------------------------------------------------------------------------
+    // Trophy head — break
+    // -------------------------------------------------------------------------
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onBlockBreak(BlockBreakEvent event) {
+        if (!isPlayerHead(event.getBlock().getType())) return;
+
+        String locKey = locKey(event.getBlock().getLocation());
+        if (!placedHeads.containsKey(locKey)) return;
+
+        event.setDropItems(false);
+
+        UUID ownerUUID = placedHeads.remove(locKey);
+        long balanceSnapshot = placedHeadBalances.getOrDefault(locKey, 0L);
+        placedHeadBalances.remove(locKey);
+        removePlacedHeadLabel(locKey);
+
+        // Rebuild the original tagged head item exactly as in onPlayerDeath.
+        ItemStack item = new ItemStack(Material.PLAYER_HEAD);
+        SkullMeta meta = (SkullMeta) item.getItemMeta();
+
+        OfflinePlayer victim = Bukkit.getOfflinePlayer(ownerUUID);
+        PlayerProfile profile = (PlayerProfile) victim.getPlayerProfile();
+        meta.setPlayerProfile(profile);
+
+        String victimName = victim.getName() != null ? victim.getName() : ownerUUID.toString();
+        int percent = plugin.getConfig().getInt("player-heads.balance-percent", 25);
+
+        Component displayName = Component.empty()
+                .decoration(TextDecoration.ITALIC, false)
+                .append(Component.text(victimName + "'s Head")
+                        .color(NamedTextColor.YELLOW)
+                        .decoration(TextDecoration.BOLD, true));
+
+        Component lore = Component.empty()
+                .decoration(TextDecoration.ITALIC, false)
+                .append(Component.text("Sell to claim bounty or ").color(NamedTextColor.GRAY))
+                .append(Component.text("$" + balanceSnapshot).color(NamedTextColor.GREEN))
+                .append(Component.text(" (" + percent + "% of balance)").color(NamedTextColor.GRAY));
+
+        meta.displayName(displayName);
+        meta.lore(List.of(lore));
+
+        meta.getPersistentDataContainer()
+                .set(HEAD_OWNER_KEY, PersistentDataType.STRING, ownerUUID.toString());
+        meta.getPersistentDataContainer()
+                .set(HEAD_BALANCE_KEY, PersistentDataType.LONG, balanceSnapshot);
+
+        item.setItemMeta(meta);
+
+        event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), item);
     }
 
     // -------------------------------------------------------------------------
@@ -138,11 +282,80 @@ public class PlayerHeadListener implements Listener {
     }
 
     // -------------------------------------------------------------------------
+    // Trophy label management
+    // -------------------------------------------------------------------------
+
+    private void updatePlacedHeadLabel(String locKey, UUID ownerUUID, long balanceSnapshot) {
+        UUID labelUid = placedHeadLabels.get(locKey);
+        if (labelUid == null) return;
+
+        String worldName = locKey.split(",", 2)[0];
+        World world = plugin.getServer().getWorld(worldName);
+        if (world == null) return;
+
+        org.bukkit.entity.Entity entity = world.getEntity(labelUid);
+        if (!(entity instanceof TextDisplay display)) return;
+
+        OfflinePlayer victim = Bukkit.getOfflinePlayer(ownerUUID);
+        String name = victim.getName() != null ? victim.getName() : ownerUUID.toString();
+
+        long bounty = 0;
+        Plugin bountyPlugin = Bukkit.getPluginManager().getPlugin("BountySystem");
+        if (bountyPlugin != null && bountyPlugin.isEnabled()) {
+            try {
+                Object manager = bountyPlugin.getClass()
+                        .getMethod("getBountyManager").invoke(bountyPlugin);
+                bounty = (long) manager.getClass()
+                        .getMethod("getBounty", UUID.class).invoke(manager, ownerUUID);
+            } catch (Exception ignored) {}
+        }
+
+        String text = bounty > 0
+                ? "§e§l" + name + "'s Head §r§7| §a§l$" + bounty + " Bounty"
+                : "§e§l" + name + "'s Head §r§7| §f§l$" + balanceSnapshot + " (25%)";
+
+        display.text(LegacyComponentSerializer.legacySection().deserialize(text));
+    }
+
+    private void removePlacedHeadLabel(String locKey) {
+        UUID uid = placedHeadLabels.remove(locKey);
+        if (uid == null) return;
+        String worldName = locKey.split(",", 2)[0];
+        World world = plugin.getServer().getWorld(worldName);
+        if (world == null) return;
+        org.bukkit.entity.Entity e = world.getEntity(uid);
+        if (e != null) e.remove();
+    }
+
+    // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
 
+    /** Returns true for both PLAYER_HEAD (floor) and PLAYER_WALL_HEAD (wall-mounted). */
+    private static boolean isPlayerHead(Material m) {
+        return m == Material.PLAYER_HEAD || m == Material.PLAYER_WALL_HEAD;
+    }
+
+    private static String locKey(Location loc) {
+        return loc.getWorld().getName() + "," + loc.getBlockX() + "," + loc.getBlockY() + "," + loc.getBlockZ();
+    }
+
+    private Location locFromKey(String locKey) {
+        String[] parts = locKey.split(",", 4);
+        if (parts.length != 4) return null;
+        World world = plugin.getServer().getWorld(parts[0]);
+        if (world == null) return null;
+        try {
+            return new Location(world,
+                    Integer.parseInt(parts[1]),
+                    Integer.parseInt(parts[2]),
+                    Integer.parseInt(parts[3]));
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
     private static Component msg(String legacy) {
-        return net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
-                .legacyAmpersand().deserialize(legacy);
+        return LegacyComponentSerializer.legacyAmpersand().deserialize(legacy);
     }
 }

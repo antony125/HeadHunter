@@ -63,12 +63,6 @@ public class HeadSellListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
     public void onPlayerInteract(PlayerInteractEvent event) {
-        // Log every firing so we can see action/item/hand/cancelled state in console.
-        plugin.getLogger().info("[HH] interact: action=" + event.getAction()
-                + " hand=" + event.getHand()
-                + " item=" + event.getMaterial()
-                + " cancelled=" + event.isCancelled());
-
         // Only process main-hand right-clicks (Paper fires the event twice).
         if (event.getHand() != EquipmentSlot.HAND) return;
         if (event.getAction() != Action.RIGHT_CLICK_AIR

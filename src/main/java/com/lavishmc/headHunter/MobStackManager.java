@@ -65,7 +65,6 @@ public class MobStackManager implements Listener {
     // State
     // -------------------------------------------------------------------------
 
-    private final java.util.logging.Logger logger;
     private final NamespacedKey stackKey;
     private final NamespacedKey headCountKey;
     /** When false, only SPAWNER / SPAWNER_EGG / COMMAND spawns are permitted (unless whitelisted). */
@@ -86,7 +85,6 @@ public class MobStackManager implements Listener {
     // -------------------------------------------------------------------------
 
     public MobStackManager(JavaPlugin plugin) {
-        this.logger = plugin.getLogger();
         // Hardcode the "headhunter" namespace so the key is always
         // "headhunter:stack_size" regardless of the registered plugin name.
         //noinspection deprecation  — intentional fixed namespace
@@ -249,8 +247,6 @@ public class MobStackManager implements Listener {
 
         if (size <= 1) return;
 
-        logger.info("[HH Stack] " + dead.getType() + " stack size=" + size);
-
         // Snapshot the drop list so we can safely append overflow stacks while iterating.
         List<ItemStack> originalDrops = new ArrayList<>(event.getDrops());
 
@@ -274,10 +270,6 @@ public class MobStackManager implements Listener {
                 // amount by stack size, then split into 64-item stacks.
                 int originalAmount = drop.getAmount();
                 int total = originalAmount * size;
-                logger.info("[HH Stack]   vanilla drop=" + drop.getType()
-                        + " originalAmt=" + originalAmount
-                        + " x" + size + " = " + total
-                        + " (" + (int) Math.ceil(total / 64.0) + " stacks)");
                 drop.setAmount(Math.min(total, 64));
                 int remaining = total - 64;
                 while (remaining > 0) {

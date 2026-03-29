@@ -36,14 +36,18 @@ public class SidebarManager {
     private final JavaPlugin plugin;
     private final PlayerDataManager playerData;
     private final Economy economy;
+    private final String serverName;
 
     /** One dedicated scoreboard per player so lines never bleed between players. */
     private final Map<UUID, Scoreboard> boards = new HashMap<>();
+    /** Per-player cache of what text is currently registered at each score slot (score → text). */
+    private final Map<UUID, Map<Integer, String>> prevLines = new HashMap<>();
 
     public SidebarManager(JavaPlugin plugin, PlayerDataManager playerData, Economy economy) {
-        this.plugin     = plugin;
-        this.playerData = playerData;
-        this.economy    = economy;
+        this.plugin      = plugin;
+        this.playerData  = playerData;
+        this.economy     = economy;
+        this.serverName  = plugin.getConfig().getString("server-name", "HeadHunter");
     }
 
     /** Start the 1-second repeating update task. Call this from onEvEnable(). */
@@ -54,46 +58,46 @@ public class SidebarManager {
     // ── Update ────────────────────────────────────────────────────────────────
 
     private void updateAll() {
-        String serverName = plugin.getConfig().getString("server-name", "HeadHunter");
-        String dateTime   = DATE_FORMAT.format(new Date());
+        String dateTime = DATE_FORMAT.format(new Date());
 
         for (Player player : Bukkit.getOnlinePlayers()) {
-            updatePlayer(player, serverName, dateTime);
+            updatePlayer(player, dateTime);
         }
 
         // Clean up boards for players who are no longer online.
         boards.keySet().removeIf(uuid -> Bukkit.getPlayer(uuid) == null);
+        prevLines.keySet().removeIf(uuid -> Bukkit.getPlayer(uuid) == null);
     }
 
-    private void updatePlayer(Player player, String serverName, String dateTime) {
+    private void updatePlayer(Player player, String dateTime) {
         UUID uuid = player.getUniqueId();
 
         ScoreboardManager manager = Bukkit.getScoreboardManager();
         Scoreboard board = boards.computeIfAbsent(uuid, k -> manager.getNewScoreboard());
+        Map<Integer, String> lines = prevLines.computeIfAbsent(uuid, k -> new HashMap<>());
 
-        // Recreate the objective each tick — simplest way to update all lines
-        // without fighting Bukkit's duplicate-score restrictions.
-        Objective old = board.getObjective("hh_sidebar");
-        if (old != null) old.unregister();
-
-        Objective obj = board.registerNewObjective(
-                "hh_sidebar", "dummy",
-                "§a§l" + serverName,
-                RenderType.INTEGER
-        );
-        obj.setDisplaySlot(DisplaySlot.SIDEBAR);
+        // Create the objective once per player; retrieve it on subsequent ticks.
+        Objective obj = board.getObjective("hh_sidebar");
+        if (obj == null) {
+            obj = board.registerNewObjective(
+                    "hh_sidebar", "dummy",
+                    "§a§l" + serverName,
+                    RenderType.INTEGER
+            );
+            obj.setDisplaySlot(DisplaySlot.SIDEBAR);
+        }
 
         // Build player-specific lines.
-        int  level       = playerData.getLevel(uuid);
-        boolean maxed    = level >= PlayerDataManager.MAX_LEVEL;
+        int     level = playerData.getLevel(uuid);
+        boolean maxed = level >= PlayerDataManager.MAX_LEVEL;
         String xpLine;
         if (maxed) {
             xpLine = "§d§l* §5§lMAX LEVEL";
         } else {
-            long totalXP         = playerData.getXP(uuid);
-            long xpAtLevel       = playerData.xpToReachLevel(level);
-            long xpForLevel      = playerData.xpForLevel(level);
-            int  percent         = xpForLevel > 0
+            long totalXP    = playerData.getXP(uuid);
+            long xpAtLevel  = playerData.xpToReachLevel(level);
+            long xpForLevel = playerData.xpForLevel(level);
+            int  percent    = xpForLevel > 0
                     ? (int) Math.min(100, (totalXP - xpAtLevel) * 100 / xpForLevel)
                     : 100;
             xpLine = "§d§l* §5§l" + percent + "% to next level";
@@ -108,20 +112,25 @@ public class SidebarManager {
         }
 
         // Scoreboard lines are set via descending score values (higher = higher on board).
-        // We use unique strings per line; padding with invisible §r sequences where
-        // needed to avoid duplicate-line collisions on static text.
-        setLine(obj, "§7" + dateTime,                            6); // date/time — normal weight
-        setLine(obj, "§r ",                                       5);
-        setLine(obj, "§e§l" + player.getName(),                  4);
-        setLine(obj, balanceLine,                                 3);
-        setLine(obj, "§d§l* §5§lLevel: §f§l" + level,           2);
-        setLine(obj, xpLine,                                      1);
+        // setLine only updates a slot when the text actually changes, removing the stale
+        // entry first to avoid ghost lines accumulating in the objective.
+        setLine(obj, board, lines, "§7" + dateTime,                   6);
+        setLine(obj, board, lines, "§r ",                              5);
+        setLine(obj, board, lines, "§e§l" + player.getName(),         4);
+        setLine(obj, board, lines, balanceLine,                        3);
+        setLine(obj, board, lines, "§d§l* §5§lLevel: §f§l" + level,  2);
+        setLine(obj, board, lines, xpLine,                             1);
 
         player.setScoreboard(board);
     }
 
-    private static void setLine(Objective obj, String text, int score) {
+    private static void setLine(Objective obj, Scoreboard board,
+                                Map<Integer, String> lines, String text, int score) {
+        String prev = lines.get(score);
+        if (text.equals(prev)) return;       // unchanged — nothing to do
+        if (prev != null) board.resetScores(prev); // remove stale entry for this slot
         obj.getScore(text).setScore(score);
+        lines.put(score, text);
     }
 
     private static String fmt(long n) {

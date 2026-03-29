@@ -468,12 +468,8 @@ public class SpawnerStackManager implements Listener {
 
     private void updateLabel(Location loc, EntityType type, int count) {
         String locKey = locKey(loc);
-        plugin.getLogger().info("[SpawnerStack] updateLabel called — loc=" + locKey + " type=" + type + " count=" + count);
         removeLabel(locKey);
-        if (count <= 1) {
-            plugin.getLogger().info("[SpawnerStack] updateLabel skipped (count <= 1) for " + locKey);
-            return;
-        }
+        if (count <= 1) return;
 
         String text = "§e§l" + formatMobName(type) + " Spawner §6§lx" + count;
         Component component = LegacyComponentSerializer.legacySection().deserialize(text);
@@ -484,21 +480,18 @@ public class SpawnerStackManager implements Listener {
         display.setBillboard(org.bukkit.entity.Display.Billboard.CENTER);
         display.setPersistent(true);
         labels.put(locKey, display.getUniqueId());
-        plugin.getLogger().info("[SpawnerStack] TextDisplay spawned — uuid=" + display.getUniqueId() + " at " + labelLoc.getWorld().getName() + " " + labelLoc.getBlockX() + "," + labelLoc.getBlockY() + "," + labelLoc.getBlockZ());
     }
 
     private void removeLabel(String locKey) {
         UUID uid = labels.remove(locKey);
-        if (uid == null) {
-            plugin.getLogger().info("[SpawnerStack] removeLabel called for " + locKey + " — no label registered, nothing to remove");
-            return;
-        }
-        plugin.getLogger().info("[SpawnerStack] removeLabel removing uuid=" + uid + " for " + locKey);
-        for (World world : plugin.getServer().getWorlds()) {
-            org.bukkit.entity.Entity e = world.getEntity(uid);
-            if (e != null) { e.remove(); return; }
-        }
-        plugin.getLogger().info("[SpawnerStack] removeLabel uuid=" + uid + " not found in any world (already gone)");
+        if (uid == null) return;
+        // locKey format is "world,x,y,z" — parse the world name directly rather than
+        // iterating all worlds.
+        String worldName = locKey.split(",", 2)[0];
+        World world = plugin.getServer().getWorld(worldName);
+        if (world == null) return;
+        org.bukkit.entity.Entity e = world.getEntity(uid);
+        if (e != null) e.remove();
     }
 
     // -------------------------------------------------------------------------

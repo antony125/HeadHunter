@@ -63,6 +63,9 @@ public class PlayerHeadListener implements Listener {
     /** Maps player UUID → death timestamp (ms). Cleared when restriction expires. */
     private final HashMap<UUID, Long> deathRestrictions = new HashMap<>();
 
+    /** Maps player UUID → last head-sell attempt timestamp (ms). Prevents double-fire. */
+    private final HashMap<UUID, Long> lastSellTime = new HashMap<>();
+
     /** Maps locKey → owner UUID for placed trophy heads. */
     private final Map<String, UUID> placedHeads = new HashMap<>();
     /** Maps locKey → balance snapshot for placed trophy heads. */
@@ -243,6 +246,13 @@ public class PlayerHeadListener implements Listener {
         if (event.getAction() != Action.RIGHT_CLICK_AIR) return;
 
         Player player = event.getPlayer();
+
+        UUID playerUUID = player.getUniqueId();
+        long now = System.currentTimeMillis();
+        Long last = lastSellTime.get(playerUUID);
+        if (last != null && now - last < 500) return;
+        lastSellTime.put(playerUUID, now);
+
         ItemStack item = player.getInventory().getItemInMainHand();
         if (item == null || item.getType() != Material.PLAYER_HEAD) return;
 

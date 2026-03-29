@@ -157,39 +157,22 @@ public class PlayerHeadListener implements Listener {
     public void onBlockPlace(BlockPlaceEvent event) {
         ItemStack item = event.getItemInHand();
         if (item.getType() != Material.PLAYER_HEAD) return;
-
-        ItemMeta rawMeta = item.getItemMeta();
-        if (rawMeta == null) return;
-
-        String ownerStr = rawMeta.getPersistentDataContainer()
+        ItemMeta meta = item.getItemMeta();
+        if (meta == null) return;
+        String ownerStr = meta.getPersistentDataContainer()
                 .get(HEAD_OWNER_KEY, PersistentDataType.STRING);
         if (ownerStr == null) return;
-
+        // Head was placed as a trophy — spawn the TextDisplay label above it.
         UUID ownerUUID;
-        try {
-            ownerUUID = UUID.fromString(ownerStr);
-        } catch (IllegalArgumentException e) {
-            return;
-        }
-
-        Long stored = rawMeta.getPersistentDataContainer()
-                .get(HEAD_BALANCE_KEY, PersistentDataType.LONG);
-        long balanceSnapshot = stored != null ? stored : 0L;
-
+        try { ownerUUID = UUID.fromString(ownerStr); }
+        catch (IllegalArgumentException e) { return; }
+        long balance = meta.getPersistentDataContainer()
+                .getOrDefault(HEAD_BALANCE_KEY, PersistentDataType.LONG, 0L);
         Location loc = event.getBlockPlaced().getLocation();
         String locKey = locKey(loc);
-
         placedHeads.put(locKey, ownerUUID);
-        placedHeadBalances.put(locKey, balanceSnapshot);
-
-        Location labelLoc = loc.clone().add(0.5, 1.4, 0.5);
-        TextDisplay display = (TextDisplay) loc.getWorld()
-                .spawnEntity(labelLoc, EntityType.TEXT_DISPLAY);
-        display.setBillboard(Display.Billboard.CENTER);
-        display.setPersistent(false);
-        placedHeadLabels.put(locKey, display.getUniqueId());
-
-        updatePlacedHeadLabel(locKey, ownerUUID, balanceSnapshot);
+        placedHeadBalances.put(locKey, balance);
+        updatePlacedHeadLabel(locKey, ownerUUID, balance);
     }
 
     // -------------------------------------------------------------------------
@@ -286,15 +269,26 @@ public class PlayerHeadListener implements Listener {
     // -------------------------------------------------------------------------
 
     private void updatePlacedHeadLabel(String locKey, UUID ownerUUID, long balanceSnapshot) {
-        UUID labelUid = placedHeadLabels.get(locKey);
-        if (labelUid == null) return;
-
         String worldName = locKey.split(",", 2)[0];
         World world = plugin.getServer().getWorld(worldName);
         if (world == null) return;
 
-        org.bukkit.entity.Entity entity = world.getEntity(labelUid);
-        if (!(entity instanceof TextDisplay display)) return;
+        // Resolve existing label entity, or spawn a fresh one if absent/gone.
+        TextDisplay display = null;
+        UUID labelUid = placedHeadLabels.get(locKey);
+        if (labelUid != null) {
+            org.bukkit.entity.Entity entity = world.getEntity(labelUid);
+            if (entity instanceof TextDisplay td) display = td;
+        }
+        if (display == null) {
+            Location loc = locFromKey(locKey);
+            if (loc == null) return;
+            Location labelLoc = loc.clone().add(0.5, 1.4, 0.5);
+            display = (TextDisplay) world.spawnEntity(labelLoc, EntityType.TEXT_DISPLAY);
+            display.setBillboard(Display.Billboard.CENTER);
+            display.setPersistent(false);
+            placedHeadLabels.put(locKey, display.getUniqueId());
+        }
 
         OfflinePlayer victim = Bukkit.getOfflinePlayer(ownerUUID);
         String name = victim.getName() != null ? victim.getName() : ownerUUID.toString();

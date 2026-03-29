@@ -95,10 +95,8 @@ public class HeadSellListener implements Listener {
                 String ownerStr = headMeta.getPersistentDataContainer()
                         .get(PlayerHeadListener.HEAD_OWNER_KEY, PersistentDataType.STRING);
                 if (ownerStr != null) {
-                    if (event.getAction() == Action.RIGHT_CLICK_BLOCK) {
-                        return; // let vanilla place the head
-                    }
-                    // Only reach here on RIGHT_CLICK_AIR
+                    if (event.getAction() != Action.RIGHT_CLICK_AIR) return;
+                    if (event.getClickedBlock() != null) return;
                     handlePlayerHeadSell(event, player, item, ownerStr);
                     return;
                 }

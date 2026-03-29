@@ -451,7 +451,6 @@ public class SpawnerStackManager implements Listener {
                 for (org.bukkit.entity.Entity nearby : e.loc().getWorld()
                         .getNearbyEntities(labelLoc, 0.5, 0.5, 0.5)) {
                     if (nearby instanceof TextDisplay) {
-                        plugin.getLogger().info("[SpawnerStack] Removing stale TextDisplay " + nearby.getUniqueId() + " at " + locKey(e.loc()));
                         nearby.remove();
                     }
                 }

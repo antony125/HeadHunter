@@ -63,7 +63,7 @@ public class HeadSellListener implements Listener {
         this.playerData = playerData;
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = false)
     public void onPlayerInteract(PlayerInteractEvent event) {
         // Only process main-hand right-clicks (Paper fires the event twice).
         if (event.getHand() != EquipmentSlot.HAND) return;
@@ -95,8 +95,7 @@ public class HeadSellListener implements Listener {
                 String ownerStr = headMeta.getPersistentDataContainer()
                         .get(PlayerHeadListener.HEAD_OWNER_KEY, PersistentDataType.STRING);
                 if (ownerStr != null) {
-                    event.setCancelled(true);
-                    handlePlayerHeadSell(player, item, ownerStr);
+                    handlePlayerHeadSell(event, player, item, ownerStr);
                     return;
                 }
             }
@@ -301,7 +300,14 @@ public class HeadSellListener implements Listener {
     // Player head sell
     // -------------------------------------------------------------------------
 
-    private void handlePlayerHeadSell(Player seller, ItemStack item, String ownerStr) {
+    private void handlePlayerHeadSell(PlayerInteractEvent event, Player seller, ItemStack item, String ownerStr) {
+        // If BountySystem (or another HIGH-priority listener) already claimed this
+        // head, skip — don't do the 25% steal.
+        if (event.isCancelled()) return;
+
+        // Consume the interaction so vanilla and other plugins don't also fire.
+        event.setCancelled(true);
+
         UUID ownerUUID;
         try {
             ownerUUID = UUID.fromString(ownerStr);

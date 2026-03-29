@@ -45,6 +45,12 @@ commands:
     permission: headhunter.admin
     permission-message: You do not have permission to use this command.
 
+  giveplayerhead:
+    description: Give a player head item for the specified player
+    usage: /giveplayerhead <player> [amount]
+    permission: headhunter.admin
+    permission-message: You do not have permission to use this command.
+
   givebanknote:
     description: Give a bank note of the specified tier to a player
     usage: /givebanknote <player> <tier> [amount]

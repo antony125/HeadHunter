@@ -111,6 +111,11 @@ public final class HeadHunter extends DropHeads {
         Objects.requireNonNull(getCommand("givespawner")).setExecutor(giveSpawner);
         Objects.requireNonNull(getCommand("givespawner")).setTabCompleter(giveSpawner);
 
+        // /giveplayerhead — give a tagged player head item to the command sender.
+        GivePlayerHeadCommand givePlayerHead = new GivePlayerHeadCommand(this);
+        Objects.requireNonNull(getCommand("giveplayerhead")).setExecutor(givePlayerHead);
+        Objects.requireNonNull(getCommand("giveplayerhead")).setTabCompleter(givePlayerHead);
+
         // /givebanknote — give a bank note of the specified tier to a player.
         GiveBankNoteCommand giveBankNote = new GiveBankNoteCommand(this);
         Objects.requireNonNull(getCommand("givebanknote")).setExecutor(giveBankNote);
